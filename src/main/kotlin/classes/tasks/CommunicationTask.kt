@@ -1,8 +1,6 @@
 package main.classes.tasks
 
-import main.interfaces.ServerTask
-
-class CommunicationTask : ServerTask {
+class CommunicationTask : Runnable {
     override fun run() {
         println("Communication task is running")
     }

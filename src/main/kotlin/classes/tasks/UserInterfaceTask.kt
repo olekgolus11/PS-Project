@@ -1,8 +1,6 @@
 package main.classes.tasks
 
-import main.interfaces.ServerTask
-
-class UserInterfaceTask : ServerTask {
+class UserInterfaceTask : Runnable {
     override fun run() {
         println("User Interface task is running")
     }

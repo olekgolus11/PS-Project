@@ -1,8 +1,6 @@
 package main.classes.tasks
 
-import main.interfaces.ServerTask
-
-class MonitoringTask : ServerTask {
+class MonitoringTask : Runnable {
     override fun run() {
         println("Monitoring task is running")
     }
