@@ -3,20 +3,20 @@ import main.adapters.JsonConfigAdapter
 import main.classes.tasks.CommunicationTask
 import main.classes.tasks.MonitoringTask
 import main.classes.tasks.UserInterfaceTask
-import main.data_classes.Config
+import main.util.ServerConfig
 
 class Server(configFileName: String) {
-    private var config: Config;
     private val jsonConfigAdapter = JsonConfigAdapter()
     private val serverTaskThreads: MutableList<Thread> = mutableListOf()
 
     init {
-        javaClass.getResourceAsStream(configFileName).use { inputStream ->
-            config = jsonConfigAdapter.fromJson(inputStream)
-        }
-
+        loadConfigFromFile(configFileName)
         setupServerTaskThreads()
         runServerTaskThreads()
+    }
+
+    private fun loadConfigFromFile(configFileName: String) {
+        ServerConfig.loadFromJson(jsonConfigAdapter, configFileName)
     }
 
     private fun setupServerTaskThreads() {
