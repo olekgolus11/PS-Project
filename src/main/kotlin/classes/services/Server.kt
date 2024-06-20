@@ -3,6 +3,7 @@ import main.adapters.JsonConfigAdapter
 import main.classes.tasks.CommunicationTask
 import main.classes.tasks.MonitoringTask
 import main.classes.tasks.UserInterfaceTask
+import main.data_classes.Config
 import main.util.ServerConfig
 
 class Server(configFileName: String) {
@@ -20,13 +21,16 @@ class Server(configFileName: String) {
     }
 
     private fun setupServerTaskThreads() {
-        val communicationThread = Thread(CommunicationTask())
         val monitoringThread = Thread(MonitoringTask())
-        val userInterfaceThread = Thread(UserInterfaceTask())
-
-        serverTaskThreads.add(communicationThread)
         serverTaskThreads.add(monitoringThread)
+
+        val userInterfaceThread = Thread(UserInterfaceTask())
         serverTaskThreads.add(userInterfaceThread)
+
+        ServerConfig.listenAddresses.forEach { listeningAddress ->
+            val communicationThread = Thread(CommunicationTask(listeningAddress))
+            serverTaskThreads.add(communicationThread)
+        }
     }
 
     private fun runServerTaskThreads() {

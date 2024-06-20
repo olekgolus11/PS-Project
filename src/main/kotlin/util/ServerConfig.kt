@@ -12,6 +12,7 @@ object ServerConfig {
     fun loadFromJson(jsonConfigAdapter: JsonConfigAdapter, configFileName: String) {
         javaClass.getResourceAsStream(configFileName).use { inputStream ->
             val config = jsonConfigAdapter.fromJson(inputStream)
+
             serverId = config.serverId
             listenAddresses = config.listenAddresses.map {
                 if (it == "*") InetAddress.getByName("0.0.0.0") else InetAddress.getByName(it)
