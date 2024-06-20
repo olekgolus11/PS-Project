@@ -1,0 +1,6 @@
+{
+  "serverId": "AWESOME JAVA SERVER",
+  "listenAddresses": ["*"],
+  "listenPort": 1234,
+  "timeOut": 3
+}
