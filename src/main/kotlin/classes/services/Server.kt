@@ -1,9 +1,8 @@
-package main.classes
+package main.classes.services
 import main.adapters.JsonConfigAdapter
 import main.data_classes.Config
-import java.io.InputStream
 
-public class Server(configFileName: String) {
+class Server(configFileName: String) {
     private var config: Config;
     private val jsonConfigAdapter = JsonConfigAdapter()
 
@@ -11,7 +10,6 @@ public class Server(configFileName: String) {
         javaClass.getResourceAsStream(configFileName).use { inputStream ->
             config = jsonConfigAdapter.fromJson(inputStream)
         }
-        println("Server started with config: $config")
     }
 
 }
