@@ -1,5 +1,7 @@
 package main.classes.tasks
 
+import com.squareup.moshi.JsonDataException
+import main.adapters.JsonQueueMessageAdapter
 import main.interfaces.ServerTask
 import java.net.Socket
 import main.util.ServerConfig
@@ -10,9 +12,10 @@ import java.io.InputStreamReader
 
 class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
     private var stopClient = false
+    private val jsonQueueMessageAdapter = JsonQueueMessageAdapter()
 
     override fun run() {
-        println("Client handler task is running")
+        println("[Client Handler] task is running")
 
         clientSocket.soTimeout = ServerConfig.timeOut * 1000
         val reader = BufferedReader(InputStreamReader(clientSocket.getInputStream()))
@@ -21,22 +24,15 @@ class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
             while (!stopClient) {
                 val message = reader.readLine()
 
-                if (message == null) {
-                    println("Client disconnected")
-                    break
-                }
-
-                // Add the message to the message queue (KKO)
-                // KKO.add(Message(clientSocket, message))
-
-                // If the message is a 'withdraw' command, perform the disconnect procedures
-                if (message == "withdraw") {
-                    // Perform disconnect procedures
-                    // ...
+                try {
+                    val queueMessage = jsonQueueMessageAdapter.fromJson(message)
+                    queueMessage.type.exectue(queueMessage)
+                } catch (e: JsonDataException) {
+                    println("[Client Handler] Failed to deserialize JSON: ${e.message}")
                 }
             }
         } catch (e: SocketTimeoutException) {
-            // Ignore timeout exceptions
+            println("[Client Handler] Socket timeout")
         } catch (e: SocketException) {
             if (!stopClient) {
                 e.printStackTrace()
@@ -47,6 +43,6 @@ class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
     override fun stop() {
         stopClient = true
         clientSocket.close()
-        println("Client handler task is stopping")
+        println("[Client Handler] task is stopping")
     }
 }
