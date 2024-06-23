@@ -56,14 +56,6 @@ class Client {
         val messageBuilder = ClientIncomingMessageBuilder()
             .setType(ClientMessageType.Status)
             .setId(clientID)
-            .setMode(ClientIncomingMessageMode.Producer)
-            .setTopic("status")
-            .setPayload(
-                mapOf(
-                    "clientID" to clientID,
-                    "isConnected" to isConnected()
-                )
-            )
             .setTimestamp(Timestamp(System.currentTimeMillis()))
 
         val message = messageBuilder.build()
