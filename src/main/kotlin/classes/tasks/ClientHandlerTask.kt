@@ -22,15 +22,13 @@ class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
         while (!stopClient) {
             try {
                 val message = reader.readLine()
-
                 val kkoQueueMessage = KKOQueueMessage(message, clientSocket)
                 MessageQueues.KKO.add(kkoQueueMessage)
             } catch (e: SocketTimeoutException) {
                 println("[Client Handler] Socket timeout")
             } catch (e: SocketException) {
-                if (!stopClient) {
-                    e.printStackTrace()
-                }
+                println("[Client Handler] Socket closed")
+                stop()
             }
         }
     }

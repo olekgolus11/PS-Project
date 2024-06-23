@@ -34,6 +34,22 @@ class MonitoringTask : ServerTask {
             try {
                 val parsedClientMessage = jsonClientIncomingMessageAdapter.fromJson(clientMessage)
                 println("[Monitoring] Received message: $parsedClientMessage")
+
+                val payload = mapOf(
+                    "success" to true,
+                    "message" to "The message was pleasant"
+                )
+
+                val clientOutgoingMessageBuilder = ClientOutgoingMessageBuilder()
+                    .setType(parsedClientMessage.type)
+                    .setId(ServerConfig.serverId)
+                    .setTopic(parsedClientMessage.topic)
+                    .setTimestamp(Timestamp(System.currentTimeMillis()))
+                    .setPayload(payload)
+
+                val clientOutgoingMessage = clientOutgoingMessageBuilder.build()
+                val kkwQueueMessage = KKWQueueMessage(clientOutgoingMessage, clientSocket)
+                MessageQueues.KKW.add(kkwQueueMessage)
             } catch (e: Exception) {
                 println("[Monitoring] Failed to parse message: $clientMessage")
 
