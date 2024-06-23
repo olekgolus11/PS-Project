@@ -4,17 +4,17 @@ import main.data_classes.ClientOutgoingMessage
 import java.sql.Timestamp
 
 class ClientOutgoingMessageBuilder {
-    private lateinit var type: ClientMessageType
     private lateinit var id: String
-    private lateinit var topic: String
+    private lateinit var type: ClientMessageType
     private lateinit var timestamp: Timestamp
-    private lateinit var payload: Map<String, Any>
+    private var topic: String? = null
+    private var payload: Map<String, Any>? = null
 
-    fun setType(type: ClientMessageType) = apply { this.type = type }
     fun setId(id: String) = apply { this.id = id }
-    fun setTopic(topic: String) = apply { this.topic = topic }
+    fun setType(type: ClientMessageType) = apply { this.type = type }
     fun setTimestamp(timestamp: Timestamp) = apply { this.timestamp = timestamp }
-    fun setPayload(payload: Map<String, Any>) = apply { this.payload = payload }
+    fun setTopic(topic: String?) = apply { this.topic = topic }
+    fun setPayload(payload: Map<String, Any>?) = apply { this.payload = payload }
 
-    fun build() = ClientOutgoingMessage(type, id, topic, timestamp, payload)
+    fun build() = ClientOutgoingMessage(id, type, timestamp, topic, payload)
 }

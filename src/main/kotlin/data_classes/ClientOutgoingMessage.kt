@@ -6,9 +6,9 @@ import java.sql.Timestamp
 
 @JsonClass(generateAdapter = true)
 data class ClientOutgoingMessage(
-    val type: ClientMessageType,
     val id: String,
-    val topic: String,
+    val type: ClientMessageType,
     val timestamp: Timestamp,
-    val payload: Map<String, Any>
+    val topic: String? = null,
+    val payload: Map<String, Any>? = null
 )
