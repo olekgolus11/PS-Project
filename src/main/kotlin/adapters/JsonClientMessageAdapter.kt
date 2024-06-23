@@ -5,15 +5,15 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import main.data_classes.ClientMessage
 
-class JsonQueueMessageAdapter {
+class JsonClientMessageAdapter {
     private val moshi: Moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
         .build()
 
     private val adapter: JsonAdapter<ClientMessage> = moshi.adapter(ClientMessage::class.java)
 
-    fun toJson(queueMessage: ClientMessage): String {
-        return adapter.toJson(queueMessage)
+    fun toJson(clientMessage: ClientMessage): String {
+        return adapter.toJson(clientMessage)
     }
 
     fun fromJson(json: String): ClientMessage {

@@ -1,7 +1,8 @@
 package main.classes.tasks
 
 import com.squareup.moshi.JsonDataException
-import main.adapters.JsonQueueMessageAdapter
+import main.adapters.JsonClientMessageAdapter
+import main.data_classes.KKOQueueMessage
 import main.interfaces.ServerTask
 import main.util.MessageQueues
 import java.net.Socket
@@ -13,7 +14,7 @@ import java.io.InputStreamReader
 
 class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
     private var stopClient = false
-    private val jsonQueueMessageAdapter = JsonQueueMessageAdapter()
+    private val jsonClientMessageAdapter = JsonClientMessageAdapter()
 
     override fun run() {
         println("[Client Handler] task is running")
@@ -26,8 +27,9 @@ class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
                 val message = reader.readLine()
 
                 try {
-                    val queueMessage = jsonQueueMessageAdapter.fromJson(message)
-                    MessageQueues.KKO.add(queueMessage)
+                    val clientMessage = jsonClientMessageAdapter.fromJson(message)
+                    val kkoQueueMessage = KKOQueueMessage(clientMessage, clientSocket)
+                    MessageQueues.KKO.add(kkoQueueMessage)
                 } catch (e: JsonDataException) {
                     println("[Client Handler] Failed to deserialize JSON: ${e.message}")
                 }
