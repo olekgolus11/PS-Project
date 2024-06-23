@@ -4,8 +4,8 @@ import com.squareup.moshi.Json
 
 sealed class ClientIncomingMessageMode {
     @Json(name = "producer")
-    object Producer : ClientIncomingMessageMode()
+    data object Producer : ClientIncomingMessageMode()
 
     @Json(name = "subscriber")
-    object Subscriber : ClientIncomingMessageMode()
+    data object Subscriber : ClientIncomingMessageMode()
 }

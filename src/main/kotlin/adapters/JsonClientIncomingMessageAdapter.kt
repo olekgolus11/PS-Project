@@ -7,6 +7,9 @@ import main.data_classes.ClientIncomingMessage
 
 class JsonClientIncomingMessageAdapter {
     private val moshi: Moshi = Moshi.Builder()
+        .add(JsonClientIncomingMessageModeAdapter())
+        .add(TimestampAdapter())
+        .add(JsonClientMessageTypeAdapter())
         .add(KotlinJsonAdapterFactory())
         .build()
 
