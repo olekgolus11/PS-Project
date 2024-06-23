@@ -2,10 +2,10 @@ package main.classes.sealed_classes
 
 import com.squareup.moshi.Json
 
-sealed class QueueMessageMode {
+sealed class ClientMessageMode {
     @Json(name = "producer")
-    object Producer : QueueMessageMode()
+    object Producer : ClientMessageMode()
 
     @Json(name = "subscriber")
-    object Subscriber : QueueMessageMode()
+    object Subscriber : ClientMessageMode()
 }
