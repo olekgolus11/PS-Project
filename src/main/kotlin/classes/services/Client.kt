@@ -35,11 +35,18 @@ class Client {
 
         Thread {
             val consoleReader = BufferedReader(InputStreamReader(System.`in`))
+
             while (true) {
-                val command = consoleReader.readLine()
+                val commandLine = consoleReader.readLine()
+                val parts = commandLine.split(" ")
+                val command = parts[0]
+                val parameters = parts.drop(1)
+
                 when (command) {
                     "isConnected" -> println(isConnected())
                     "getServerStatus" -> getServerStatus()
+                    "getServerLogs" -> getServerLogs()
+                    "createProducer" -> createProducer(parameters[0])
                     else -> println("Unknown command: $command")
                 }
             }
@@ -55,6 +62,31 @@ class Client {
     fun getServerStatus() {
         val messageBuilder = ClientIncomingMessageBuilder()
             .setType(ClientMessageType.Status)
+            .setTopic("logs")
+            .setId(clientID)
+            .setTimestamp(Timestamp(System.currentTimeMillis()))
+
+        val message = messageBuilder.build()
+        val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
+        writer.println(jsonMessage)
+    }
+
+    fun getServerLogs() {
+        val messageBuilder = ClientIncomingMessageBuilder()
+//            .setType(ClientMessageType.GetLogs) Nie wiem jeszcze co ma robić ta metoda
+            .setTopic("logs")
+            .setId(clientID)
+            .setTimestamp(Timestamp(System.currentTimeMillis()))
+
+        val message = messageBuilder.build()
+        val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
+        writer.println(jsonMessage)
+    }
+
+    fun createProducer(topic: String) {
+        val messageBuilder = ClientIncomingMessageBuilder()
+            .setType(ClientMessageType.Register)
+            .setTopic(topic)
             .setId(clientID)
             .setTimestamp(Timestamp(System.currentTimeMillis()))
 
