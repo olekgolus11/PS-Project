@@ -47,6 +47,7 @@ class Client {
                     "getServerStatus" -> getServerStatus()
                     "getServerLogs" -> getServerLogs()
                     "createProducer" -> createProducer(parameters[0])
+                    "produce" -> produce(parameters[0], parameters.drop(1).joinToString(" "))
                     else -> println("Unknown command: $command")
                 }
             }
@@ -55,11 +56,11 @@ class Client {
         println("Client $clientID is connected to server at $serverIP:$serverPort")
     }
 
-    fun isConnected(): Boolean {
+    private fun isConnected(): Boolean {
         return socket.isConnected && !socket.isClosed
     }
 
-    fun getServerStatus() {
+    private fun getServerStatus() {
         val messageBuilder = ClientIncomingMessageBuilder()
             .setType(ClientMessageType.Status)
             .setTopic("logs")
@@ -71,7 +72,7 @@ class Client {
         writer.println(jsonMessage)
     }
 
-    fun getServerLogs() {
+    private fun getServerLogs() {
         val messageBuilder = ClientIncomingMessageBuilder()
 //            .setType(ClientMessageType.GetLogs) Nie wiem jeszcze co ma robić ta metoda
             .setTopic("logs")
@@ -83,12 +84,26 @@ class Client {
         writer.println(jsonMessage)
     }
 
-    fun createProducer(topic: String) {
+    private fun createProducer(topic: String) {
         val messageBuilder = ClientIncomingMessageBuilder()
             .setType(ClientMessageType.Register)
             .setTopic(topic)
             .setId(clientID)
             .setTimestamp(Timestamp(System.currentTimeMillis()))
+
+        val message = messageBuilder.build()
+        val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
+        writer.println(jsonMessage)
+    }
+
+    private fun produce(topic: String, payload: String) {
+        val messageBuilder = ClientIncomingMessageBuilder()
+            .setType(ClientMessageType.Message)
+            .setTopic(topic)
+            .setId(clientID)
+            .setTimestamp(Timestamp(System.currentTimeMillis()))
+            .setMode(ClientIncomingMessageMode.Producer)
+            .setPayload(mapOf("message" to payload))
 
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)

@@ -37,7 +37,7 @@ sealed class ClientMessageType {
     @Json(name = "withdraw")
     data object Withdraw : ClientMessageType() {
         override fun exectue(queueMessage: KKWQueueMessage) {
-            println("Withdrawing ${queueMessage.clientOutgoingMessage.id}")
+            println("[Withdraw Resolver] Withdrawing ${queueMessage.clientOutgoingMessage.id}")
         }
 
         override fun checkJson(json: String): Boolean {
@@ -48,7 +48,7 @@ sealed class ClientMessageType {
     @Json(name = "reject")
     data object Reject : ClientMessageType() {
         override fun exectue(queueMessage: KKWQueueMessage) {
-            println("Rejecting ${queueMessage.clientOutgoingMessage.id}")
+            println("[Reject Resolver] Rejecting ${queueMessage.clientOutgoingMessage.id}")
         }
 
         override fun checkJson(json: String): Boolean {
@@ -59,7 +59,7 @@ sealed class ClientMessageType {
     @Json(name = "acknowledge")
     data object Acknowledge : ClientMessageType() {
         override fun exectue(queueMessage: KKWQueueMessage) {
-            println("Acknowledging ${queueMessage.clientOutgoingMessage.id}")
+            println("[Acknowledge Resolver] Acknowledging ${queueMessage.clientOutgoingMessage.id}")
         }
 
         override fun checkJson(json: String): Boolean {
@@ -70,7 +70,7 @@ sealed class ClientMessageType {
     @Json(name = "message")
     data object Message : ClientMessageType() {
         override fun exectue(queueMessage: KKWQueueMessage) {
-            println("Sending message to ${queueMessage.clientOutgoingMessage.id}")
+            println("[Message Resolver] Sending message to ${queueMessage.clientOutgoingMessage.id}")
         }
 
         override fun checkJson(json: String): Boolean {
@@ -81,7 +81,7 @@ sealed class ClientMessageType {
     @Json(name = "status")
     data object Status : ClientMessageType() {
         override fun exectue(queueMessage: KKWQueueMessage) {
-            println("Checking status of ${queueMessage.clientOutgoingMessage.id}")
+            println("[Status Resolver] Checking status of ${queueMessage.clientOutgoingMessage.id}")
         }
 
         override fun checkJson(json: String): Boolean {
