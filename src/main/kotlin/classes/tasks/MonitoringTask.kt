@@ -3,7 +3,9 @@ package main.classes.tasks
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import data_classes.ClientRef
 import main.adapters.JsonClientIncomingMessageAdapter
+import main.classes.builders.ClientIncomingMessageBuilder
 import main.classes.builders.ClientOutgoingMessageBuilder
 import main.classes.sealed_classes.ClientMessageType
 import main.data_classes.KKWQueueMessage
@@ -32,30 +34,21 @@ class MonitoringTask : ServerTask {
             val clientSocket = kkoQueueMessage.clientSocket
 
             try {
+                println("[Monitoring] Parsing message")
                 val parsedClientMessage = jsonClientIncomingMessageAdapter.fromJson(clientMessage)
                 println("[Monitoring] Received message: $parsedClientMessage")
 
-                val payload = mapOf(
-                    "success" to true,
-                    "message" to "The message was pleasant"
-                )
-
-                val clientOutgoingMessageBuilder = ClientOutgoingMessageBuilder()
-                    .setType(parsedClientMessage.type)
-                    .setId(ServerConfig.serverId)
-                    .setTopic(parsedClientMessage.topic)
-                    .setTimestamp(Timestamp(System.currentTimeMillis()))
-                    .setPayload(payload)
-
-                val clientOutgoingMessage = clientOutgoingMessageBuilder.build()
-                val kkwQueueMessage = KKWQueueMessage(clientOutgoingMessage, clientSocket)
-                MessageQueues.KKW.add(kkwQueueMessage)
+                val clientID = parsedClientMessage.id
+                val clientRef = ClientRef(clientID, clientSocket)
+                parsedClientMessage.type.exectue(parsedClientMessage, clientRef)
             } catch (e: Exception) {
                 println("[Monitoring] Failed to parse message: $clientMessage")
 
                 val messageMap = jsonClientIncomingMessageErrorAdapter.fromJson(clientMessage)
                 val timestamp = messageMap?.get("timestamp") as? Timestamp
                 val topic = messageMap?.get("topic") as? String
+                val clientID = messageMap?.get("id") as? String ?: "Unknown"
+                val clientRef = ClientRef(clientID, clientSocket)
 
                 val payload = mapOf(
                     "timestampOfMessage" to (timestamp ?: "N/A"),
@@ -64,16 +57,15 @@ class MonitoringTask : ServerTask {
                     "message" to "The message was unpleasant"
                 )
 
-                val clientOutgoingMessageBuilder = ClientOutgoingMessageBuilder()
+                val clientIncomingMessageBuilder = ClientIncomingMessageBuilder()
                     .setType(ClientMessageType.Reject)
                     .setId(ServerConfig.serverId)
                     .setTopic("logs")
                     .setTimestamp(Timestamp(System.currentTimeMillis()))
                     .setPayload(payload)
 
-                val clientOutgoingMessage = clientOutgoingMessageBuilder.build()
-                val kkwQueueMessage = KKWQueueMessage(clientOutgoingMessage, clientSocket)
-                MessageQueues.KKW.add(kkwQueueMessage)
+                val clientIncomingMessage = clientIncomingMessageBuilder.build()
+                clientIncomingMessage.type.exectue(clientIncomingMessage, clientRef)
             }
         }
     }

@@ -1,8 +1,8 @@
 package main.data_classes
 
-import java.net.Socket
+import data_classes.ClientRef
 
 data class KKWQueueMessage(
     val clientOutgoingMessage: ClientOutgoingMessage,
-    val clientSocket: Socket
+    val clientRefs: List<ClientRef>
 )
