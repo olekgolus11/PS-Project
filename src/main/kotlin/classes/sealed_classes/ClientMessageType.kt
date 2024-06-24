@@ -118,7 +118,7 @@ sealed class ClientMessageType {
                     )
                 ).build()
 
-            MessageQueues.KKW.add(KKWQueueMessage(sendAllMessage, listOf(clientRef)))
+            MessageQueues.KKW.add(KKWQueueMessage(sendAllMessage, subscribersOfTheTopic.plus(clientRef))) //delete clientref
             MessageQueues.KKW.add(KKWQueueMessage(logMessage, listOf(clientRef)))
         }
 
