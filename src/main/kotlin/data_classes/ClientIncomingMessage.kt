@@ -2,7 +2,7 @@ package main.data_classes
 
 import com.squareup.moshi.JsonClass
 import main.classes.sealed_classes.ClientIncomingMessageMode
-import main.classes.sealed_classes.ClientMessageType
+import classes.sealed_classes.ClientMessageType
 import java.sql.Timestamp
 
 @JsonClass(generateAdapter = true)

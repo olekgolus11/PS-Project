@@ -1,14 +1,16 @@
-package main.classes.sealed_classes
+package classes.sealed_classes
 
 import com.squareup.moshi.Json
 import data_classes.ClientRef
 import data_classes.Topic
+import main.adapters.JsonClientOutgoingMessageAdapter
 import main.classes.builders.ClientOutgoingMessageBuilder
 import main.data_classes.ClientIncomingMessage
+import main.data_classes.ClientOutgoingMessage
 import main.data_classes.KKWQueueMessage
 import main.util.MessageQueues
 import main.util.ServerConfig
-import java.net.Socket
+import java.io.PrintWriter
 import java.sql.Timestamp
 
 sealed class ClientMessageType {
@@ -18,7 +20,7 @@ sealed class ClientMessageType {
     @Json(name = "register")
     data object Register : ClientMessageType() {
         override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
-            println("[Register Callback] Registering ${clientIncomingMessage.id}")
+            println("[Register Callback] Register - from ${clientIncomingMessage.id}")
 
             //checkJson()
             val topicName = clientIncomingMessage.topic!!
@@ -39,7 +41,7 @@ sealed class ClientMessageType {
     @Json(name = "withdraw")
     data object Withdraw : ClientMessageType() {
         override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
-            println("[Withdraw Callback] Withdrawing ${clientIncomingMessage.id}")
+            println("[Withdraw Callback] Withdraw - from ${clientIncomingMessage.id}")
         }
 
         override fun checkJson(json: String): Boolean {
@@ -50,7 +52,7 @@ sealed class ClientMessageType {
     @Json(name = "reject")
     data object Reject : ClientMessageType() {
         override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
-            println("[Reject Callback] Rejecting ${clientIncomingMessage.id}")
+            println("[Reject Callback] Reject - from ${clientIncomingMessage.id}")
         }
 
         override fun checkJson(json: String): Boolean {
@@ -60,8 +62,19 @@ sealed class ClientMessageType {
 
     @Json(name = "acknowledge")
     data object Acknowledge : ClientMessageType() {
+        private val jsonClientOutgoingMessageAdapter = JsonClientOutgoingMessageAdapter()
+
         override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
-            println("[Acknowledge Callback] Acknowledging ${clientIncomingMessage.id}")
+            println("[Acknowledge Callback] Acknowledge - from ${clientIncomingMessage.id}")
+
+            //checkJson
+            val message = ClientOutgoingMessageBuilder()
+                .copy(clientIncomingMessage)
+                .build()
+
+            val writer = PrintWriter(clientRef.clientSocket.getOutputStream(), true)
+            val jsonMessage = jsonClientOutgoingMessageAdapter.toJson(message)
+            writer.println(jsonMessage)
         }
 
         override fun checkJson(json: String): Boolean {
@@ -72,7 +85,7 @@ sealed class ClientMessageType {
     @Json(name = "message")
     data object Message : ClientMessageType() {
         override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
-            println("[Message Callback] Sending message to ${clientIncomingMessage.id}")
+            println("[Message Callback] Message - from ${clientIncomingMessage.id}")
 
             //checkJson()
             val topic = clientIncomingMessage.topic!!
@@ -81,7 +94,7 @@ sealed class ClientMessageType {
 
             val sendAllMessage = ClientOutgoingMessageBuilder()
                 .setId(ServerConfig.serverId)
-                .setType(Message)
+                .setType(Acknowledge)
                 .setTopic(topic)
                 .setTimestamp(Timestamp(System.currentTimeMillis()))
                 .setPayload(
@@ -105,7 +118,7 @@ sealed class ClientMessageType {
                     )
                 ).build()
 
-            MessageQueues.KKW.add(KKWQueueMessage(sendAllMessage, subscribersOfTheTopic))
+            MessageQueues.KKW.add(KKWQueueMessage(sendAllMessage, listOf(clientRef)))
             MessageQueues.KKW.add(KKWQueueMessage(logMessage, listOf(clientRef)))
         }
 
@@ -117,7 +130,7 @@ sealed class ClientMessageType {
     @Json(name = "status")
     data object Status : ClientMessageType() {
         override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
-            println("[Status Callback] Checking status of ${clientIncomingMessage.id}")
+            println("[Status Callback] Status - from ${clientIncomingMessage.id}")
         }
 
         override fun checkJson(json: String): Boolean {

@@ -2,7 +2,7 @@ package main.adapters
 
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.ToJson
-import main.classes.sealed_classes.ClientMessageType
+import classes.sealed_classes.ClientMessageType
 
 class JsonClientMessageTypeAdapter {
     @ToJson

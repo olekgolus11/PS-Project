@@ -1,9 +1,9 @@
-package main.classes.services
+package classes.services
 
 import main.adapters.JsonClientIncomingMessageAdapter
 import main.classes.builders.ClientIncomingMessageBuilder
 import main.classes.sealed_classes.ClientIncomingMessageMode
-import main.classes.sealed_classes.ClientMessageType
+import classes.sealed_classes.ClientMessageType
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.PrintWriter

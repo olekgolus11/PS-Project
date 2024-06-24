@@ -1,7 +1,6 @@
 package main
 
-import main.classes.services.Client
-import main.classes.services.Server
+import classes.services.Client
 
 fun main() {
     val client = Client()

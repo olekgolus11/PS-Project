@@ -14,7 +14,7 @@ class ResolverTask : ServerTask {
 
         while (!stopResolving) {
             if (MessageQueues.KKW.isEmpty()) {
-                Thread.sleep(1)
+                Thread.sleep(1000)
                 continue
             }
 
