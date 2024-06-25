@@ -23,12 +23,11 @@ class ResolverTask : ServerTask {
             val clientReceiverRefs = kkwQueueMessage.clientRefs
 
             val messageToResend = ClientIncomingMessageBuilder()
+                .copy(clientMessage)
                 .setId(ServerConfig.serverId)
-                .setType(clientMessage.type)
-                .setTimestamp(clientMessage.timestamp)
-                .setTopic(clientMessage.topic)
-                .setPayload(clientMessage.payload)
                 .build()
+
+            println("[Resolver] Resolving message: $messageToResend")
 
             clientReceiverRefs.forEach {
                 messageToResend.type.exectue(messageToResend, it)

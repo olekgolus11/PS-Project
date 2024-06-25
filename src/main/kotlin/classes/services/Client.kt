@@ -48,6 +48,9 @@ class Client {
                     "getServerLogs" -> getServerLogs()
                     "createProducer" -> createProducer(parameters[0])
                     "produce" -> produce(parameters[0], parameters.drop(1).joinToString(" "))
+                    "withdrawProducer" -> withdrawProducer(parameters[0])
+                    "createSubscriber" -> createSubscriber(parameters[0])
+                    "withdrawSubscriber" -> withdrawSubscriber(parameters[0])
                     else -> println("Unknown command: $command")
                 }
             }
@@ -89,6 +92,46 @@ class Client {
             .setType(ClientMessageType.Register)
             .setTopic(topic)
             .setId(clientID)
+            .setMode(ClientIncomingMessageMode.Producer)
+            .setTimestamp(Timestamp(System.currentTimeMillis()))
+
+        val message = messageBuilder.build()
+        val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
+        writer.println(jsonMessage)
+    }
+
+    private fun withdrawProducer(topic: String) {
+        val messageBuilder = ClientIncomingMessageBuilder()
+            .setType(ClientMessageType.Withdraw)
+            .setTopic(topic)
+            .setId(clientID)
+            .setMode(ClientIncomingMessageMode.Producer)
+            .setTimestamp(Timestamp(System.currentTimeMillis()))
+
+        val message = messageBuilder.build()
+        val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
+        writer.println(jsonMessage)
+    }
+
+    private fun createSubscriber(topic: String) {
+        val messageBuilder = ClientIncomingMessageBuilder()
+            .setType(ClientMessageType.Register)
+            .setTopic(topic)
+            .setId(clientID)
+            .setMode(ClientIncomingMessageMode.Subscriber)
+            .setTimestamp(Timestamp(System.currentTimeMillis()))
+
+        val message = messageBuilder.build()
+        val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
+        writer.println(jsonMessage)
+    }
+
+    private fun withdrawSubscriber(topic: String) {
+        val messageBuilder = ClientIncomingMessageBuilder()
+            .setType(ClientMessageType.Withdraw)
+            .setTopic(topic)
+            .setId(clientID)
+            .setMode(ClientIncomingMessageMode.Subscriber)
             .setTimestamp(Timestamp(System.currentTimeMillis()))
 
         val message = messageBuilder.build()

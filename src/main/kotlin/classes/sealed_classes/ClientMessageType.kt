@@ -5,6 +5,7 @@ import data_classes.ClientRef
 import data_classes.Topic
 import main.adapters.JsonClientOutgoingMessageAdapter
 import main.classes.builders.ClientOutgoingMessageBuilder
+import main.classes.sealed_classes.ClientIncomingMessageMode
 import main.data_classes.ClientIncomingMessage
 import main.data_classes.ClientOutgoingMessage
 import main.data_classes.KKWQueueMessage
@@ -22,19 +23,36 @@ sealed class ClientMessageType {
         override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Register Callback] Register - from ${clientIncomingMessage.id}")
 
-            //checkJson()
-            val topicName = clientIncomingMessage.topic!!
-            val producerRef = ClientRef(clientIncomingMessage.id, clientRef.clientSocket)
-
-            val topic = Topic(producerRef, topicName, emptyList())
-
-            MessageQueues.LT[topicName] = topic
-
-            println("[Register Callback] Registered" + MessageQueues.LT[topicName])
+            if (clientIncomingMessage.mode == ClientIncomingMessageMode.Producer) {
+                registerProducer(clientIncomingMessage, clientRef)
+            } else {
+                registerSubscriber(clientIncomingMessage, clientRef)
+            }
         }
 
         override fun checkJson(json: String): Boolean {
             return json.contains("register")
+        }
+
+        private fun registerProducer(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            val topicName = clientIncomingMessage.topic!!
+            val producerRef = ClientRef(clientIncomingMessage.id, clientRef.clientSocket)
+
+            val topic = Topic(producerRef, topicName, mutableListOf())
+
+            MessageQueues.LT[topicName] = topic
+
+            println("[Register Callback] Registered Producer " + MessageQueues.LT[topicName])
+        }
+
+        private fun registerSubscriber(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            val topicName = clientIncomingMessage.topic!!
+            val subscriberRef = ClientRef(clientIncomingMessage.id, clientRef.clientSocket)
+
+            val topic = MessageQueues.LT[topicName]
+            topic?.subscribers?.add(subscriberRef)
+
+            println("[Register Callback] Registered Subscriber " + MessageQueues.LT[topicName])
         }
     }
 
@@ -42,10 +60,32 @@ sealed class ClientMessageType {
     data object Withdraw : ClientMessageType() {
         override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Withdraw Callback] Withdraw - from ${clientIncomingMessage.id}")
+
+            //checkJson()
+            if (clientIncomingMessage.mode == ClientIncomingMessageMode.Producer) {
+                withdrawProducer(clientIncomingMessage, clientRef)
+            } else {
+                withdrawSubscriber(clientIncomingMessage, clientRef)
+            }
         }
 
         override fun checkJson(json: String): Boolean {
             return json.contains("withdraw")
+        }
+
+        private fun withdrawProducer(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            val topicName = clientIncomingMessage.topic!!
+            MessageQueues.LT.remove(topicName)
+            println("[Withdraw Callback] Withdraw Producer " + MessageQueues.LT[topicName])
+        }
+
+        private fun withdrawSubscriber(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            val topicName = clientIncomingMessage.topic!!
+            val subscriberRef = ClientRef(clientIncomingMessage.id, clientRef.clientSocket)
+
+            val topic = MessageQueues.LT[topicName]
+            topic?.subscribers?.remove(subscriberRef)
+            println("[Withdraw Callback] Withdraw Subscriber " + MessageQueues.LT[topicName])
         }
     }
 
@@ -72,6 +112,8 @@ sealed class ClientMessageType {
                 .copy(clientIncomingMessage)
                 .build()
 
+            println("[Acknowledge Callback] Acknowledge - to $message")
+
             val writer = PrintWriter(clientRef.clientSocket.getOutputStream(), true)
             val jsonMessage = jsonClientOutgoingMessageAdapter.toJson(message)
             writer.println(jsonMessage)
@@ -90,7 +132,7 @@ sealed class ClientMessageType {
             //checkJson()
             val topic = clientIncomingMessage.topic!!
             val incomingPayload = clientIncomingMessage.payload!!
-            val subscribersOfTheTopic = MessageQueues.LT[topic]?.subscribers
+            val subscribersOfTheTopic = MessageQueues.LT[topic]?.subscribers!!
 
             val sendAllMessage = ClientOutgoingMessageBuilder()
                 .setId(ServerConfig.serverId)
@@ -100,7 +142,6 @@ sealed class ClientMessageType {
                 .setPayload(
                     mapOf(
                         "message" to incomingPayload["message"]!!,
-                        "subscribers" to subscribersOfTheTopic!!
                     )
                 ).build()
 
@@ -118,7 +159,7 @@ sealed class ClientMessageType {
                     )
                 ).build()
 
-            MessageQueues.KKW.add(KKWQueueMessage(sendAllMessage, subscribersOfTheTopic.plus(clientRef))) //delete clientref
+            MessageQueues.KKW.add(KKWQueueMessage(sendAllMessage, subscribersOfTheTopic))
             MessageQueues.KKW.add(KKWQueueMessage(logMessage, listOf(clientRef)))
         }
 
