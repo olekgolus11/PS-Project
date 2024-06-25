@@ -22,6 +22,11 @@ class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
         while (!stopClient) {
             try {
                 val message = reader.readLine()
+                if (message == null) {
+                    println("[Client Handler] End of stream reached, stopping task")
+                    stop()
+                    break
+                }
                 val kkoQueueMessage = KKOQueueMessage(message, clientSocket)
                 MessageQueues.KKO.add(kkoQueueMessage)
             } catch (e: SocketTimeoutException) {
@@ -35,7 +40,8 @@ class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
 
     override fun stop() {
         stopClient = true
+        clientSocket.shutdownInput()
         clientSocket.close()
-        println("[Client Handler] task is stopping")
+        println("[Client Handler] Client Handler task stopped")
     }
 }

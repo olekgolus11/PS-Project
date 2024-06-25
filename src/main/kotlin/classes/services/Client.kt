@@ -5,6 +5,7 @@ import main.classes.builders.ClientIncomingMessageBuilder
 import main.classes.sealed_classes.ClientIncomingMessageMode
 import classes.sealed_classes.ClientMessageType
 import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
@@ -16,6 +17,7 @@ class Client {
     private lateinit var writer: PrintWriter
     private lateinit var socket: Socket
 
+    private var isClientRunning = true
     private val jsonClientIncomingMessageAdapter = JsonClientIncomingMessageAdapter()
 
     fun start(serverIP: String, serverPort: Int, clientID: String) {
@@ -25,7 +27,7 @@ class Client {
         writer = PrintWriter(socket.getOutputStream(), true)
 
         Thread {
-            while (true) {
+            while (isClientRunning) {
                 val serverMessage = reader.readLine()
                 if (serverMessage != null) {
                     println("Received message from server: $serverMessage")
@@ -51,6 +53,11 @@ class Client {
                     "withdrawProducer" -> withdrawProducer(parameters[0])
                     "createSubscriber" -> createSubscriber(parameters[0])
                     "withdrawSubscriber" -> withdrawSubscriber(parameters[0])
+                    "stop" -> {
+                        stop()
+                        break
+                    }
+
                     else -> println("Unknown command: $command")
                 }
             }
@@ -151,5 +158,14 @@ class Client {
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
         writer.println(jsonMessage)
+    }
+
+    private fun stop() {
+        isClientRunning = false
+        socket.shutdownInput()
+        socket.shutdownOutput()
+        reader.close()
+        writer.close()
+        socket.close()
     }
 }
