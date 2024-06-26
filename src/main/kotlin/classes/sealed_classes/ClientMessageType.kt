@@ -10,6 +10,7 @@ import main.data_classes.ClientIncomingMessage
 import main.data_classes.KKWQueueMessage
 import main.util.MessageQueues
 import main.util.ServerConfig
+import main.util.ServerLogs
 import java.io.PrintWriter
 import java.sql.Timestamp
 
@@ -342,10 +343,16 @@ sealed class ClientMessageType {
 
             val clientMessage = clientIncomingMessage.payload?.get("message") as String
 
-            if (clientMessage == "GetStatus") {
-                getStatus(clientIncomingMessage, clientRef)
-            } else if (clientMessage == "GetServerStatus") {
-                getServerStatus(clientIncomingMessage, clientRef)
+            when (clientMessage) {
+                "GetStatus" -> {
+                    getStatus(clientIncomingMessage, clientRef)
+                }
+                "GetServerStatus" -> {
+                    getServerStatus(clientIncomingMessage, clientRef)
+                }
+                "GetServerLogs" -> {
+                    getServerLogs(clientIncomingMessage, clientRef)
+                }
             }
         }
 
@@ -356,8 +363,8 @@ sealed class ClientMessageType {
             if (clientIncomingMessage.payload["message"] == null) {
                 throw IllegalArgumentException("Message cannot be null")
             }
-            if (!listOf("GetStatus", "GetServerStatus").contains(clientIncomingMessage.payload["message"])) {
-                throw IllegalArgumentException("Message must be GetStatus or GetServerStatus")
+            if (!listOf("GetStatus", "GetServerStatus", "GetServerLogs").contains(clientIncomingMessage.payload["message"])) {
+                throw IllegalArgumentException("Message must be GetStatus, GetServerLogs or GetServerStatus")
             }
             if (clientIncomingMessage.topic != "logs") {
                 throw IllegalArgumentException("Topic must be logs")
@@ -413,6 +420,29 @@ sealed class ClientMessageType {
                         "success" to true,
                         "message" to "Status of server",
                         "topics" to topics
+                    )
+                ).build()
+
+            MessageQueues.KKW.add(KKWQueueMessage(statusMessage, listOf(clientRef)))
+        }
+
+        private fun getServerLogs(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            val serverLogs = ServerLogs.getLogs().filter {
+                log -> log.clientRefs.contains(clientRef)
+            }
+            println("[Status Callback] Server Logs: $serverLogs")
+            val payloads = serverLogs.map { log -> log.clientOutgoingMessage.payload }
+
+            val statusMessage = ClientOutgoingMessageBuilder()
+                .setId(ServerConfig.serverId)
+                .setType(Acknowledge)
+                .setTopic("logs")
+                .setTimestamp(Timestamp(System.currentTimeMillis()))
+                .setPayload(
+                    mapOf(
+                        "success" to true,
+                        "message" to "Logs of server",
+                        "logs" to payloads
                     )
                 ).build()
 

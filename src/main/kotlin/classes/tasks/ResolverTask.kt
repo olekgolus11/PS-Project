@@ -4,6 +4,7 @@ import main.classes.builders.ClientIncomingMessageBuilder
 import main.interfaces.ServerTask
 import main.util.MessageQueues
 import main.util.ServerConfig
+import main.util.ServerLogs
 
 class ResolverTask : ServerTask {
     private var stopResolving = false
@@ -20,6 +21,10 @@ class ResolverTask : ServerTask {
             val kkwQueueMessage = MessageQueues.KKW.poll()
             val clientMessage = kkwQueueMessage.clientOutgoingMessage
             val clientReceiverRefs = kkwQueueMessage.clientRefs
+
+            if (clientMessage.payload?.get("logs") == null) {
+                ServerLogs.addLog(kkwQueueMessage)
+            }
 
             val messageToResend = ClientIncomingMessageBuilder()
                 .copy(clientMessage)

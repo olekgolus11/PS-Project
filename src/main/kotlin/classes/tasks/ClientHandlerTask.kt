@@ -43,5 +43,6 @@ class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
         clientSocket.shutdownInput()
         clientSocket.close()
         println("[Client Handler] Client Handler task stopped")
+        //TODO: Implement client removal from topics list
     }
 }

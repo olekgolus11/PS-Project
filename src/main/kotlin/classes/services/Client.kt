@@ -5,12 +5,15 @@ import main.classes.builders.ClientIncomingMessageBuilder
 import main.classes.sealed_classes.ClientIncomingMessageMode
 import classes.sealed_classes.ClientMessageType
 import main.adapters.JsonClientOutgoingMessageAdapter
+import main.data_classes.ClientIncomingMessage
+import main.data_classes.ClientOutgoingMessage
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
 import java.sql.Timestamp
+import javax.security.auth.callback.Callback
 
 class Client {
     private lateinit var clientID: String
@@ -21,6 +24,9 @@ class Client {
     private var isClientRunning = true
     private val jsonClientIncomingMessageAdapter = JsonClientIncomingMessageAdapter()
     private val jsonClientOutgoingMessageAdapter = JsonClientOutgoingMessageAdapter()
+    private val sentMessages = mutableListOf<ClientIncomingMessage>()
+    private var getServerLogsCallback: ((ClientOutgoingMessage) -> Unit)? = null
+
 
     fun start(serverIP: String, serverPort: Int, clientID: String) {
         this.clientID = clientID
@@ -33,7 +39,12 @@ class Client {
                 val serverMessage = reader.readLine()
                 if (serverMessage != null) {
                     val message = jsonClientOutgoingMessageAdapter.fromJson(serverMessage)
-                    println("Received message: $message")
+
+                    if (message.payload?.get("logs") != null) {
+                        getServerLogsCallback?.invoke(message)
+                    } else {
+                        println("Received message: $message")
+                    }
                 }
             }
         }.start()
@@ -49,7 +60,6 @@ class Client {
 
                 when (command) {
                     "isConnected" -> println(isConnected())
-                    "getServerLogs" -> getServerLogs()
                     "createProducer" -> createProducer(parameters[0])
                     "produce" -> produce(parameters[0], parameters.drop(1).joinToString(" "))
                     "withdrawProducer" -> withdrawProducer(parameters[0])
@@ -57,6 +67,7 @@ class Client {
                     "withdrawSubscriber" -> withdrawSubscriber(parameters[0])
                     "getStatus" -> getStatus()
                     "getServerStatus" -> getServerStatus()
+                    "getServerLogs" -> getServerLogs(::printCallback)
                     "stop" -> {
                         stop()
                         break
@@ -89,6 +100,7 @@ class Client {
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
         writer.println(jsonMessage)
+        sentMessages.add(message)
     }
 
     private fun getServerStatus() {
@@ -106,17 +118,33 @@ class Client {
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
         writer.println(jsonMessage)
+        sentMessages.add(message)
     }
 
-    private fun getServerLogs() {
+    private fun printCallback(clientOutgoingMessage: ClientOutgoingMessage) {
+        println("Messages sent by client: $sentMessages")
+        println("Logs from server:")
+        val logs = clientOutgoingMessage.payload?.get("logs") as? List<*>
+        logs?.forEach { log ->
+            println("Log: $log")
+        }
+    }
+
+    private fun getServerLogs(callback: (ClientOutgoingMessage) -> Unit) {
         val messageBuilder = ClientIncomingMessageBuilder()
-//            .setType(ClientMessageType.GetLogs) Nie wiem jeszcze co ma robić ta metoda
+            .setType(ClientMessageType.Status)
             .setTopic("logs")
             .setId(clientID)
             .setTimestamp(Timestamp(System.currentTimeMillis()))
+            .setPayload(
+                mapOf(
+                    "message" to "GetServerLogs"
+                )
+            )
 
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
+        this.getServerLogsCallback = callback
         writer.println(jsonMessage)
     }
 
@@ -131,6 +159,7 @@ class Client {
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
         writer.println(jsonMessage)
+        sentMessages.add(message)
     }
 
     private fun withdrawProducer(topic: String) {
@@ -144,6 +173,7 @@ class Client {
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
         writer.println(jsonMessage)
+        sentMessages.add(message)
     }
 
     private fun createSubscriber(topic: String) {
@@ -157,6 +187,7 @@ class Client {
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
         writer.println(jsonMessage)
+        sentMessages.add(message)
     }
 
     private fun withdrawSubscriber(topic: String) {
@@ -170,6 +201,7 @@ class Client {
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
         writer.println(jsonMessage)
+        sentMessages.add(message)
     }
 
     private fun produce(topic: String, payload: String) {
@@ -184,6 +216,7 @@ class Client {
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
         writer.println(jsonMessage)
+        sentMessages.add(message)
     }
 
     private fun stop() {
