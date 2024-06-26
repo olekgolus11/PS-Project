@@ -19,6 +19,7 @@ class Client {
     private lateinit var clientID: String
     private lateinit var reader: BufferedReader
     private lateinit var writer: PrintWriter
+    private lateinit var consoleReader: BufferedReader
     private lateinit var socket: Socket
 
     private var isClientRunning = true
@@ -33,6 +34,7 @@ class Client {
         socket = Socket(serverIP, serverPort)
         reader = BufferedReader(InputStreamReader(socket.getInputStream()))
         writer = PrintWriter(socket.getOutputStream(), true)
+        consoleReader = BufferedReader(InputStreamReader(System.`in`))
 
         Thread {
             while (isClientRunning) {
@@ -45,26 +47,29 @@ class Client {
                     } else {
                         println("Received message: $message")
                     }
+                    if (message.payload?.get("message") == "Producer has withdrawn from the topic") {
+                        println("You have been withdrawn from the only topic you have subscribed to, stopping client")
+                        stop()
+                    }
                 }
             }
+            println("Stopped receiving messages from server")
         }.start()
 
         Thread {
-            val consoleReader = BufferedReader(InputStreamReader(System.`in`))
-
-            while (true) {
-                val commandLine = consoleReader.readLine()
+            while (isClientRunning) {
+                val commandLine = consoleReader.readLine() ?: break
                 val parts = commandLine.split(" ")
                 val command = parts[0]
                 val parameters = parts.drop(1)
 
                 when (command) {
                     "isConnected" -> println(isConnected())
-                    "createProducer" -> createProducer(parameters[0])
-                    "produce" -> produce(parameters[0], parameters.drop(1).joinToString(" "))
-                    "withdrawProducer" -> withdrawProducer(parameters[0])
-                    "createSubscriber" -> createSubscriber(parameters[0])
-                    "withdrawSubscriber" -> withdrawSubscriber(parameters[0])
+                    "p" -> produce(parameters[0], parameters.drop(1).joinToString(" "))
+                    "cp" -> createProducer(parameters[0])
+                    "wp" -> withdrawProducer(parameters[0])
+                    "cs" -> createSubscriber(parameters[0])
+                    "ws" -> withdrawSubscriber(parameters[0])
                     "getStatus" -> getStatus()
                     "getServerStatus" -> getServerStatus()
                     "getServerLogs" -> getServerLogs(::printCallback)
@@ -72,10 +77,10 @@ class Client {
                         stop()
                         break
                     }
-
                     else -> println("Unknown command: $command")
                 }
             }
+            println("Stopped sending messages to server")
         }.start()
 
         println("Client $clientID is connected to server at $serverIP:$serverPort")
@@ -226,5 +231,6 @@ class Client {
         reader.close()
         writer.close()
         socket.close()
+        System.`in`.close()
     }
 }

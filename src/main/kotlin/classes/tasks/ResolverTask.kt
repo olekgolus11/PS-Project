@@ -14,7 +14,7 @@ class ResolverTask : ServerTask {
 
         while (!stopResolving) {
             if (MessageQueues.KKW.isEmpty()) {
-                Thread.sleep(1000)
+                Thread.sleep(100)
                 continue
             }
 
@@ -34,7 +34,11 @@ class ResolverTask : ServerTask {
             println("[Resolver] Resolving message: $messageToResend")
 
             clientReceiverRefs.forEach {
-                messageToResend.type.execute(messageToResend, it)
+                try {
+                    messageToResend.type.execute(messageToResend, it)
+                } catch (e: Exception) {
+                    println("[Resolver] Socket already closed")
+                }
             }
 
             println("[Resolver] Resolved message: ${kkwQueueMessage.clientOutgoingMessage.topic}")

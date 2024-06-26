@@ -12,6 +12,7 @@ import main.util.MessageQueues
 import main.util.ServerConfig
 import main.util.ServerLogs
 import java.io.PrintWriter
+import java.net.Socket
 import java.sql.Timestamp
 
 sealed class ClientMessageType {
@@ -41,6 +42,7 @@ sealed class ClientMessageType {
         }
 
         override fun checkJson(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            super.checkJson(clientIncomingMessage, clientRef)
             if (clientIncomingMessage.mode == null) {
                 throw IllegalArgumentException("Mode cannot be null")
             }
@@ -119,6 +121,8 @@ sealed class ClientMessageType {
 
     @Json(name = "withdraw")
     data object Withdraw : ClientMessageType() {
+        private val jsonClientOutgoingMessageAdapter = JsonClientOutgoingMessageAdapter()
+
         override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Withdraw Callback] Withdraw - from ${clientIncomingMessage.id}")
 
@@ -157,6 +161,29 @@ sealed class ClientMessageType {
 
         private fun withdrawProducer(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             val topicName = clientIncomingMessage.topic!!
+
+            MessageQueues.LT.entries.forEach { (topicName, topic) ->
+                val isProducer = topic.producerRef?.clientSocket == clientRef.clientSocket
+                if (isProducer) {
+                    topic.subscribers.forEach { subscriber ->
+                        if (shouldDisconnectClient(subscriber.clientSocket)) {
+                            val disconnectMessage = ClientOutgoingMessageBuilder()
+                                .setId(subscriber.clientID)
+                                .setType(Acknowledge)
+                                .setTopic(topicName)
+                                .setTimestamp(Timestamp(System.currentTimeMillis()))
+                                .setPayload(
+                                    mapOf(
+                                        "message" to "Producer has withdrawn from the topic"
+                                    )
+                                ).build()
+
+                            MessageQueues.KKW.add(KKWQueueMessage(disconnectMessage, listOf(subscriber)))
+                        }
+                    }
+                }
+            }
+
             MessageQueues.LT.remove(topicName)
 
             val logMessage = ClientOutgoingMessageBuilder()
@@ -202,6 +229,20 @@ sealed class ClientMessageType {
             MessageQueues.KKW.add(KKWQueueMessage(logMessage, listOf(clientRef)))
 
             println("[Withdraw Callback] Withdraw Subscriber " + MessageQueues.LT[topicName])
+        }
+
+        private fun shouldDisconnectClient(clientSocket: Socket): Boolean {
+            var subscriptionCount = 0
+            var isProducer = false
+            MessageQueues.LT.forEach { (_, topic) ->
+                if (topic.subscribers.any { it.clientSocket == clientSocket }) {
+                    subscriptionCount++
+                }
+                if (topic.producerRef?.clientSocket == clientSocket) {
+                    isProducer = true
+                }
+            }
+            return subscriptionCount == 1 && !isProducer
         }
     }
 
@@ -347,9 +388,11 @@ sealed class ClientMessageType {
                 "GetStatus" -> {
                     getStatus(clientIncomingMessage, clientRef)
                 }
+
                 "GetServerStatus" -> {
                     getServerStatus(clientIncomingMessage, clientRef)
                 }
+
                 "GetServerLogs" -> {
                     getServerLogs(clientIncomingMessage, clientRef)
                 }
@@ -363,7 +406,12 @@ sealed class ClientMessageType {
             if (clientIncomingMessage.payload["message"] == null) {
                 throw IllegalArgumentException("Message cannot be null")
             }
-            if (!listOf("GetStatus", "GetServerStatus", "GetServerLogs").contains(clientIncomingMessage.payload["message"])) {
+            if (!listOf(
+                    "GetStatus",
+                    "GetServerStatus",
+                    "GetServerLogs"
+                ).contains(clientIncomingMessage.payload["message"])
+            ) {
                 throw IllegalArgumentException("Message must be GetStatus, GetServerLogs or GetServerStatus")
             }
             if (clientIncomingMessage.topic != "logs") {
@@ -427,8 +475,8 @@ sealed class ClientMessageType {
         }
 
         private fun getServerLogs(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
-            val serverLogs = ServerLogs.getLogs().filter {
-                log -> log.clientRefs.contains(clientRef)
+            val serverLogs = ServerLogs.getLogs().filter { log ->
+                log.clientRefs.contains(clientRef)
             }
             println("[Status Callback] Server Logs: $serverLogs")
             val payloads = serverLogs.map { log -> log.clientOutgoingMessage.payload }
