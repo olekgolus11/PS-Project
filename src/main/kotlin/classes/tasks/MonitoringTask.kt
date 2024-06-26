@@ -35,13 +35,16 @@ class MonitoringTask : ServerTask {
                 println("[Monitoring] Parsing message")
 
                 val parsedClientMessage = jsonClientIncomingMessageAdapter.fromJson(clientMessage)
-                println("[Monitoring] Received message: $parsedClientMessage")
-
                 val clientID = parsedClientMessage.id
                 val clientRef = ClientRef(clientID, clientSocket)
+
+                parsedClientMessage.type.checkJson(parsedClientMessage, clientRef)
+
+                println("[Monitoring] Received message: $parsedClientMessage")
+
                 parsedClientMessage.type.execute(parsedClientMessage, clientRef)
             } catch (e: Exception) {
-                println("[Monitoring] Failed to parse message: $clientMessage")
+                println("[Monitoring] Failed to parse message: $clientMessage, error: ${e.message}")
 
                 val messageMap = jsonClientIncomingMessageErrorAdapter.fromJson(clientMessage)
                 val timestamp = messageMap?.get("timestamp") as? Timestamp
@@ -53,7 +56,7 @@ class MonitoringTask : ServerTask {
                     "timestampOfMessage" to (timestamp ?: "N/A"),
                     "topicOfMessage" to (topic ?: "N/A"),
                     "success" to false,
-                    "message" to "The message was unpleasant"
+                    "message" to e.message!!
                 )
 
                 val clientIncomingMessageBuilder = ClientIncomingMessageBuilder()

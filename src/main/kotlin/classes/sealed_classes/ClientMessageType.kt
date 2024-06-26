@@ -15,7 +15,17 @@ import java.sql.Timestamp
 
 sealed class ClientMessageType {
     abstract fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef)
-    abstract fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean
+    open fun checkJson(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+        if (clientIncomingMessage.id == null) {
+            throw IllegalArgumentException("ID cannot be null")
+        }
+        if (clientIncomingMessage.type == null) {
+            throw IllegalArgumentException("Type cannot be null")
+        }
+        if (clientIncomingMessage.timestamp == null) {
+            throw IllegalArgumentException("Timestamp cannot be null")
+        }
+    }
 
     @Json(name = "register")
     data object Register : ClientMessageType() {
@@ -29,8 +39,27 @@ sealed class ClientMessageType {
             }
         }
 
-        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
-            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            if (clientIncomingMessage.mode == null) {
+                throw IllegalArgumentException("Mode cannot be null")
+            }
+            if (clientIncomingMessage.topic == null) {
+                throw IllegalArgumentException("Topic cannot be null")
+            }
+
+            if (clientIncomingMessage.mode == ClientIncomingMessageMode.Producer) {
+                if (MessageQueues.LT.containsKey(clientIncomingMessage.topic)) {
+                    throw IllegalArgumentException("Topic already exists")
+                }
+            }
+            if (clientIncomingMessage.mode == ClientIncomingMessageMode.Subscriber) {
+                if (!MessageQueues.LT.containsKey(clientIncomingMessage.topic)) {
+                    throw IllegalArgumentException("Topic does not exist")
+                }
+                if (MessageQueues.LT[clientIncomingMessage.topic]?.subscribers?.contains(clientRef) == true) {
+                    throw IllegalArgumentException("Subscriber already exists is this topic")
+                }
+            }
         }
 
         private fun registerProducer(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
@@ -60,7 +89,6 @@ sealed class ClientMessageType {
         override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Withdraw Callback] Withdraw - from ${clientIncomingMessage.id}")
 
-            //checkJson()
             if (clientIncomingMessage.mode == ClientIncomingMessageMode.Producer) {
                 withdrawProducer(clientIncomingMessage)
             } else {
@@ -68,8 +96,30 @@ sealed class ClientMessageType {
             }
         }
 
-        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
-            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            if (clientIncomingMessage.mode == null) {
+                throw IllegalArgumentException("Mode cannot be null")
+            }
+            if (clientIncomingMessage.topic == null) {
+                throw IllegalArgumentException("Topic cannot be null")
+            }
+
+            if (clientIncomingMessage.mode == ClientIncomingMessageMode.Producer) {
+                if (!MessageQueues.LT.containsKey(clientIncomingMessage.topic)) {
+                    throw IllegalArgumentException("Topic does not exist")
+                }
+                if (MessageQueues.LT[clientIncomingMessage.topic]?.producerRef != clientRef) {
+                    throw IllegalArgumentException("Client is not the producer of this topic")
+                }
+            }
+            if (clientIncomingMessage.mode == ClientIncomingMessageMode.Subscriber) {
+                if (!MessageQueues.LT.containsKey(clientIncomingMessage.topic)) {
+                    throw IllegalArgumentException("Topic does not exist")
+                }
+                if (MessageQueues.LT[clientIncomingMessage.topic]?.subscribers?.contains(clientRef) == false) {
+                    throw IllegalArgumentException("Subscriber does not exist in this topic")
+                }
+            }
         }
 
         private fun withdrawProducer(clientIncomingMessage: ClientIncomingMessage) {
@@ -90,12 +140,38 @@ sealed class ClientMessageType {
 
     @Json(name = "reject")
     data object Reject : ClientMessageType() {
+        private val jsonClientOutgoingMessageAdapter = JsonClientOutgoingMessageAdapter()
+
         override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Reject Callback] Reject - from ${clientIncomingMessage.id}")
+
+            val message = ClientOutgoingMessageBuilder()
+                .copy(clientIncomingMessage)
+                .build()
+
+            println("[Reject Callback] Reject - to $message")
+
+            val writer = PrintWriter(clientRef.clientSocket.getOutputStream(), true)
+            val jsonMessage = jsonClientOutgoingMessageAdapter.toJson(message)
+            writer.println(jsonMessage)
         }
 
-        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
-            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            if (clientIncomingMessage.payload == null) {
+                throw IllegalArgumentException("Payload cannot be null")
+            }
+            if (clientIncomingMessage.payload["message"] == null) {
+                throw IllegalArgumentException("Message cannot be null")
+            }
+            if (clientIncomingMessage.payload["success"] == null) {
+                throw IllegalArgumentException("Success cannot be null")
+            }
+            if (clientIncomingMessage.payload["timestampOfMessage"] == null) {
+                throw IllegalArgumentException("Timestamp Of Message cannot be null")
+            }
+            if (clientIncomingMessage.payload["topicOfMessage"] == null) {
+                throw IllegalArgumentException("Topic Of Message cannot be null")
+            }
         }
     }
 
@@ -106,7 +182,6 @@ sealed class ClientMessageType {
         override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Acknowledge Callback] Acknowledge - from ${clientIncomingMessage.id}")
 
-            //checkJson
             val message = ClientOutgoingMessageBuilder()
                 .copy(clientIncomingMessage)
                 .build()
@@ -118,8 +193,22 @@ sealed class ClientMessageType {
             writer.println(jsonMessage)
         }
 
-        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
-            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            if (clientIncomingMessage.payload == null) {
+                throw IllegalArgumentException("Payload cannot be null")
+            }
+            if (clientIncomingMessage.payload["message"] == null) {
+                throw IllegalArgumentException("Message cannot be null")
+            }
+            if (clientIncomingMessage.payload["success"] == null) {
+                throw IllegalArgumentException("Success cannot be null")
+            }
+            if (clientIncomingMessage.payload["timestampOfMessage"] == null) {
+                throw IllegalArgumentException("Timestamp Of Message cannot be null")
+            }
+            if (clientIncomingMessage.payload["topicOfMessage"] == null) {
+                throw IllegalArgumentException("Topic Of Message cannot be null")
+            }
         }
     }
 
@@ -128,7 +217,6 @@ sealed class ClientMessageType {
         override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Message Callback] Message - from ${clientIncomingMessage.id}")
 
-            //checkJson()
             val topic = clientIncomingMessage.topic!!
             val incomingPayload = clientIncomingMessage.payload!!
             val subscribersOfTheTopic = MessageQueues.LT[topic]?.subscribers!!
@@ -162,8 +250,22 @@ sealed class ClientMessageType {
             MessageQueues.KKW.add(KKWQueueMessage(logMessage, listOf(clientRef)))
         }
 
-        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
-            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            if (clientIncomingMessage.mode == ClientIncomingMessageMode.Subscriber) {
+                throw IllegalArgumentException("Mode cannot be Subscriber")
+            }
+            if (MessageQueues.LT[clientIncomingMessage.topic]?.producerRef != clientRef) {
+                throw IllegalArgumentException("Producer is not the same as the client")
+            }
+            if (clientIncomingMessage.payload == null) {
+                throw IllegalArgumentException("Payload cannot be null")
+            }
+            if (clientIncomingMessage.payload["message"] == null) {
+                throw IllegalArgumentException("Message cannot be null")
+            }
+            if (MessageQueues.LT[clientIncomingMessage.topic]?.subscribers == null || MessageQueues.LT[clientIncomingMessage.topic]?.subscribers?.isEmpty() == true) {
+                throw IllegalArgumentException("Subscribers cannot be empty")
+            }
         }
     }
 
@@ -173,8 +275,7 @@ sealed class ClientMessageType {
             println("[Status Callback] Status - from ${clientIncomingMessage.id}")
         }
 
-        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
-            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
         }
     }
 }

@@ -11,4 +11,16 @@ data class ClientOutgoingMessage(
     val timestamp: Timestamp,
     val topic: String? = null,
     val payload: Map<String, Any>? = null
-)
+) {
+    override fun toString(): String {
+        return """
+            ClientOutgoingMessage {
+                id = '$id',
+                type = $type,
+                timestamp = $timestamp,
+                topic = $topic,
+                payload = $payload
+            }
+        """.trimIndent()
+    }
+}

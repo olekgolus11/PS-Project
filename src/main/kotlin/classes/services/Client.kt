@@ -4,6 +4,7 @@ import main.adapters.JsonClientIncomingMessageAdapter
 import main.classes.builders.ClientIncomingMessageBuilder
 import main.classes.sealed_classes.ClientIncomingMessageMode
 import classes.sealed_classes.ClientMessageType
+import main.adapters.JsonClientOutgoingMessageAdapter
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -19,6 +20,7 @@ class Client {
 
     private var isClientRunning = true
     private val jsonClientIncomingMessageAdapter = JsonClientIncomingMessageAdapter()
+    private val jsonClientOutgoingMessageAdapter = JsonClientOutgoingMessageAdapter()
 
     fun start(serverIP: String, serverPort: Int, clientID: String) {
         this.clientID = clientID
@@ -30,7 +32,8 @@ class Client {
             while (isClientRunning) {
                 val serverMessage = reader.readLine()
                 if (serverMessage != null) {
-                    println("Received message from server: $serverMessage")
+                    val message = jsonClientOutgoingMessageAdapter.fromJson(serverMessage)
+                    println("Received message: $message")
                 }
             }
         }.start()
