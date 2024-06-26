@@ -8,12 +8,10 @@ import main.adapters.JsonClientOutgoingMessageAdapter
 import main.data_classes.ClientIncomingMessage
 import main.data_classes.ClientOutgoingMessage
 import java.io.BufferedReader
-import java.io.IOException
 import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
 import java.sql.Timestamp
-import javax.security.auth.callback.Callback
 
 class Client {
     private lateinit var clientID: String
@@ -27,6 +25,7 @@ class Client {
     private val jsonClientOutgoingMessageAdapter = JsonClientOutgoingMessageAdapter()
     private val sentMessages = mutableListOf<ClientIncomingMessage>()
     private var getServerLogsCallback: ((ClientOutgoingMessage) -> Unit)? = null
+    private var getServerStatusCallback: ((ClientOutgoingMessage) -> Unit)? = null
 
 
     fun start(serverIP: String, serverPort: Int, clientID: String) {
@@ -44,6 +43,8 @@ class Client {
 
                     if (message.payload?.get("logs") != null) {
                         getServerLogsCallback?.invoke(message)
+                    } else if (message.payload?.get("topics") != null) {
+                        getServerStatusCallback?.invoke(message)
                     } else {
                         println("Received message: $message")
                     }
@@ -71,12 +72,13 @@ class Client {
                     "cs" -> createSubscriber(parameters[0])
                     "ws" -> withdrawSubscriber(parameters[0])
                     "getStatus" -> getStatus()
-                    "getServerStatus" -> getServerStatus()
-                    "getServerLogs" -> getServerLogs(::printCallback)
+                    "getServerStatus" -> getServerStatus(::printStatusCallback)
+                    "getServerLogs" -> getServerLogs(::printLogsCallback)
                     "stop" -> {
                         stop()
                         break
                     }
+
                     else -> println("Unknown command: $command")
                 }
             }
@@ -108,7 +110,7 @@ class Client {
         sentMessages.add(message)
     }
 
-    private fun getServerStatus() {
+    private fun getServerStatus(callback: (ClientOutgoingMessage) -> Unit) {
         val messageBuilder = ClientIncomingMessageBuilder()
             .setType(ClientMessageType.Status)
             .setTopic("logs")
@@ -122,11 +124,21 @@ class Client {
 
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
+        this.getServerStatusCallback = callback
         writer.println(jsonMessage)
         sentMessages.add(message)
     }
 
-    private fun printCallback(clientOutgoingMessage: ClientOutgoingMessage) {
+    private fun printStatusCallback(clientOutgoingMessage: ClientOutgoingMessage) {
+        val topics = clientOutgoingMessage.payload?.get("topics") as? List<*>
+        val message = clientOutgoingMessage.payload?.get("message") as? String
+        println(message)
+        topics?.forEach { topic ->
+            println("Topic: $topic")
+        }
+    }
+
+    private fun printLogsCallback(clientOutgoingMessage: ClientOutgoingMessage) {
         println("Messages sent by client: $sentMessages")
         println("Logs from server:")
         val logs = clientOutgoingMessage.payload?.get("logs") as? List<*>
