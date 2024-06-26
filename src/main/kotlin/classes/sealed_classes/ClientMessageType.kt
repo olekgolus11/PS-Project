@@ -339,9 +339,84 @@ sealed class ClientMessageType {
     data object Status : ClientMessageType() {
         override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Status Callback] Status - from ${clientIncomingMessage.id}")
+
+            val clientMessage = clientIncomingMessage.payload?.get("message") as String
+
+            if (clientMessage == "GetStatus") {
+                getStatus(clientIncomingMessage, clientRef)
+            } else if (clientMessage == "GetServerStatus") {
+                getServerStatus(clientIncomingMessage, clientRef)
+            }
         }
 
         override fun checkJson(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            if (clientIncomingMessage.payload == null) {
+                throw IllegalArgumentException("Payload cannot be null")
+            }
+            if (clientIncomingMessage.payload["message"] == null) {
+                throw IllegalArgumentException("Message cannot be null")
+            }
+            if (!listOf("GetStatus", "GetServerStatus").contains(clientIncomingMessage.payload["message"])) {
+                throw IllegalArgumentException("Message must be GetStatus or GetServerStatus")
+            }
+            if (clientIncomingMessage.topic != "logs") {
+                throw IllegalArgumentException("Topic must be logs")
+            }
+
+            val clientMessage = clientIncomingMessage.payload["message"] as String
+
+            if (clientMessage == "GetStatus") {
+                if (MessageQueues.LT.filterValues { it.producerRef == clientRef }
+                        .isEmpty() && MessageQueues.LT.filterValues { it.subscribers.contains(clientRef) }
+                        .isEmpty()) {
+                    throw IllegalArgumentException("Client must be a producer or a subscriber")
+                }
+            }
+        }
+
+        private fun getStatus(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            val topicsProducedByClient = MessageQueues.LT.filterValues { it.producerRef == clientRef }.keys
+            val topicsSubscribedByClient = MessageQueues.LT.filterValues { it.subscribers.contains(clientRef) }.keys
+
+            val statusMessage = ClientOutgoingMessageBuilder()
+                .setId(ServerConfig.serverId)
+                .setType(Acknowledge)
+                .setTopic("logs")
+                .setTimestamp(Timestamp(System.currentTimeMillis()))
+                .setPayload(
+                    mapOf(
+                        "success" to true,
+                        "message" to "Status of client",
+                        "topicsProducedByClient" to topicsProducedByClient,
+                        "topicsSubscribedByClient" to topicsSubscribedByClient
+                    )
+                ).build()
+
+            MessageQueues.KKW.add(KKWQueueMessage(statusMessage, listOf(clientRef)))
+        }
+
+        private fun getServerStatus(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+            val topics = MessageQueues.LT.values.map { topic ->
+                mapOf(
+                    "topicName" to topic.topicName,
+                    "producerID" to (topic.producerRef?.clientID ?: "N/A"),
+                )
+            }
+
+            val statusMessage = ClientOutgoingMessageBuilder()
+                .setId(ServerConfig.serverId)
+                .setType(Acknowledge)
+                .setTopic("logs")
+                .setTimestamp(Timestamp(System.currentTimeMillis()))
+                .setPayload(
+                    mapOf(
+                        "success" to true,
+                        "message" to "Status of server",
+                        "topics" to topics
+                    )
+                ).build()
+
+            MessageQueues.KKW.add(KKWQueueMessage(statusMessage, listOf(clientRef)))
         }
     }
 }

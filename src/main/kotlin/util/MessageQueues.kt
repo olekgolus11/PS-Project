@@ -10,5 +10,9 @@ import java.util.concurrent.ConcurrentMap
 object MessageQueues {
     val KKO: ConcurrentLinkedQueue<KKOQueueMessage> = ConcurrentLinkedQueue()
     val KKW: ConcurrentLinkedQueue<KKWQueueMessage> = ConcurrentLinkedQueue()
-    val LT: ConcurrentMap<String, Topic> = ConcurrentHashMap()
+    val LT: ConcurrentMap<String, Topic> = ConcurrentHashMap(
+        mapOf(
+            "logs" to Topic(null, "logs", mutableListOf()),
+        )
+    )
 }

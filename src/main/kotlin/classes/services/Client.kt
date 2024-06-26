@@ -49,13 +49,14 @@ class Client {
 
                 when (command) {
                     "isConnected" -> println(isConnected())
-                    "getServerStatus" -> getServerStatus()
                     "getServerLogs" -> getServerLogs()
                     "createProducer" -> createProducer(parameters[0])
                     "produce" -> produce(parameters[0], parameters.drop(1).joinToString(" "))
                     "withdrawProducer" -> withdrawProducer(parameters[0])
                     "createSubscriber" -> createSubscriber(parameters[0])
                     "withdrawSubscriber" -> withdrawSubscriber(parameters[0])
+                    "getStatus" -> getStatus()
+                    "getServerStatus" -> getServerStatus()
                     "stop" -> {
                         stop()
                         break
@@ -73,12 +74,34 @@ class Client {
         return socket.isConnected && !socket.isClosed
     }
 
+    private fun getStatus() {
+        val messageBuilder = ClientIncomingMessageBuilder()
+            .setType(ClientMessageType.Status)
+            .setTopic("logs")
+            .setId(clientID)
+            .setTimestamp(Timestamp(System.currentTimeMillis()))
+            .setPayload(
+                mapOf(
+                    "message" to "GetStatus"
+                )
+            )
+
+        val message = messageBuilder.build()
+        val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
+        writer.println(jsonMessage)
+    }
+
     private fun getServerStatus() {
         val messageBuilder = ClientIncomingMessageBuilder()
             .setType(ClientMessageType.Status)
             .setTopic("logs")
             .setId(clientID)
             .setTimestamp(Timestamp(System.currentTimeMillis()))
+            .setPayload(
+                mapOf(
+                    "message" to "GetServerStatus"
+                )
+            )
 
         val message = messageBuilder.build()
         val jsonMessage = jsonClientIncomingMessageAdapter.toJson(message)
