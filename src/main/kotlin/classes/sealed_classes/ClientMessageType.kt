@@ -70,6 +70,22 @@ sealed class ClientMessageType {
 
             MessageQueues.LT[topicName] = topic
 
+            val logMessage = ClientOutgoingMessageBuilder()
+                .setId(ServerConfig.serverId)
+                .setType(Acknowledge)
+                .setTopic("logs")
+                .setTimestamp(Timestamp(System.currentTimeMillis()))
+                .setPayload(
+                    mapOf(
+                        "timestampOfMessage" to clientIncomingMessage.timestamp,
+                        "topicOfMessage" to clientIncomingMessage.topic,
+                        "success" to true,
+                        "message" to "Producer was registered"
+                    )
+                ).build()
+
+            MessageQueues.KKW.add(KKWQueueMessage(logMessage, listOf(clientRef)))
+
             println("[Register Callback] Registered Producer " + MessageQueues.LT[topicName])
         }
 
@@ -79,6 +95,22 @@ sealed class ClientMessageType {
 
             val topic = MessageQueues.LT[topicName]
             topic?.subscribers?.add(subscriberRef)
+
+            val logMessage = ClientOutgoingMessageBuilder()
+                .setId(ServerConfig.serverId)
+                .setType(Acknowledge)
+                .setTopic("logs")
+                .setTimestamp(Timestamp(System.currentTimeMillis()))
+                .setPayload(
+                    mapOf(
+                        "timestampOfMessage" to clientIncomingMessage.timestamp,
+                        "topicOfMessage" to clientIncomingMessage.topic,
+                        "success" to true,
+                        "message" to "Subscriber was registered"
+                    )
+                ).build()
+
+            MessageQueues.KKW.add(KKWQueueMessage(logMessage, listOf(clientRef)))
 
             println("[Register Callback] Registered Subscriber " + MessageQueues.LT[topicName])
         }
@@ -90,7 +122,7 @@ sealed class ClientMessageType {
             println("[Withdraw Callback] Withdraw - from ${clientIncomingMessage.id}")
 
             if (clientIncomingMessage.mode == ClientIncomingMessageMode.Producer) {
-                withdrawProducer(clientIncomingMessage)
+                withdrawProducer(clientIncomingMessage, clientRef)
             } else {
                 withdrawSubscriber(clientIncomingMessage, clientRef)
             }
@@ -122,9 +154,26 @@ sealed class ClientMessageType {
             }
         }
 
-        private fun withdrawProducer(clientIncomingMessage: ClientIncomingMessage) {
+        private fun withdrawProducer(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             val topicName = clientIncomingMessage.topic!!
             MessageQueues.LT.remove(topicName)
+
+            val logMessage = ClientOutgoingMessageBuilder()
+                .setId(ServerConfig.serverId)
+                .setType(Acknowledge)
+                .setTopic("logs")
+                .setTimestamp(Timestamp(System.currentTimeMillis()))
+                .setPayload(
+                    mapOf(
+                        "timestampOfMessage" to clientIncomingMessage.timestamp,
+                        "topicOfMessage" to clientIncomingMessage.topic,
+                        "success" to true,
+                        "message" to "Producer was withdrawn"
+                    )
+                ).build()
+
+            MessageQueues.KKW.add(KKWQueueMessage(logMessage, listOf(clientRef)))
+
             println("[Withdraw Callback] Withdraw Producer " + MessageQueues.LT[topicName])
         }
 
@@ -134,6 +183,23 @@ sealed class ClientMessageType {
 
             val topic = MessageQueues.LT[topicName]
             topic?.subscribers?.remove(subscriberRef)
+
+            val logMessage = ClientOutgoingMessageBuilder()
+                .setId(ServerConfig.serverId)
+                .setType(Acknowledge)
+                .setTopic("logs")
+                .setTimestamp(Timestamp(System.currentTimeMillis()))
+                .setPayload(
+                    mapOf(
+                        "timestampOfMessage" to clientIncomingMessage.timestamp,
+                        "topicOfMessage" to clientIncomingMessage.topic,
+                        "success" to true,
+                        "message" to "Subscriber was withdrawn"
+                    )
+                ).build()
+
+            MessageQueues.KKW.add(KKWQueueMessage(logMessage, listOf(clientRef)))
+
             println("[Withdraw Callback] Withdraw Subscriber " + MessageQueues.LT[topicName])
         }
     }
