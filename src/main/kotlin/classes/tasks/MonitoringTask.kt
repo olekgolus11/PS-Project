@@ -33,6 +33,7 @@ class MonitoringTask : ServerTask {
 
             try {
                 println("[Monitoring] Parsing message")
+
                 val parsedClientMessage = jsonClientIncomingMessageAdapter.fromJson(clientMessage)
                 println("[Monitoring] Received message: $parsedClientMessage")
 

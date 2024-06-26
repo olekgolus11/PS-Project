@@ -15,7 +15,7 @@ import java.sql.Timestamp
 
 sealed class ClientMessageType {
     abstract fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef)
-    abstract fun checkJson(json: String): Boolean
+    abstract fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean
 
     @Json(name = "register")
     data object Register : ClientMessageType() {
@@ -29,8 +29,8 @@ sealed class ClientMessageType {
             }
         }
 
-        override fun checkJson(json: String): Boolean {
-            return json.contains("register")
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
+            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
         }
 
         private fun registerProducer(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
@@ -62,17 +62,17 @@ sealed class ClientMessageType {
 
             //checkJson()
             if (clientIncomingMessage.mode == ClientIncomingMessageMode.Producer) {
-                withdrawProducer(clientIncomingMessage, clientRef)
+                withdrawProducer(clientIncomingMessage)
             } else {
                 withdrawSubscriber(clientIncomingMessage, clientRef)
             }
         }
 
-        override fun checkJson(json: String): Boolean {
-            return json.contains("withdraw")
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
+            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
         }
 
-        private fun withdrawProducer(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+        private fun withdrawProducer(clientIncomingMessage: ClientIncomingMessage) {
             val topicName = clientIncomingMessage.topic!!
             MessageQueues.LT.remove(topicName)
             println("[Withdraw Callback] Withdraw Producer " + MessageQueues.LT[topicName])
@@ -94,8 +94,8 @@ sealed class ClientMessageType {
             println("[Reject Callback] Reject - from ${clientIncomingMessage.id}")
         }
 
-        override fun checkJson(json: String): Boolean {
-            return json.contains("reject")
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
+            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
         }
     }
 
@@ -118,8 +118,8 @@ sealed class ClientMessageType {
             writer.println(jsonMessage)
         }
 
-        override fun checkJson(json: String): Boolean {
-            return json.contains("acknowledge")
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
+            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
         }
     }
 
@@ -162,8 +162,8 @@ sealed class ClientMessageType {
             MessageQueues.KKW.add(KKWQueueMessage(logMessage, listOf(clientRef)))
         }
 
-        override fun checkJson(json: String): Boolean {
-            return json.contains("message")
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
+            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
         }
     }
 
@@ -173,8 +173,8 @@ sealed class ClientMessageType {
             println("[Status Callback] Status - from ${clientIncomingMessage.id}")
         }
 
-        override fun checkJson(json: String): Boolean {
-            return json.contains("status")
+        override fun checkJson(clientIncomingMessage: ClientIncomingMessage): Boolean {
+            return clientIncomingMessage.mode == ClientIncomingMessageMode.Producer
         }
     }
 }
