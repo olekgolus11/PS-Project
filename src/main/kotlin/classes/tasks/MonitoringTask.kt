@@ -38,7 +38,7 @@ class MonitoringTask : ServerTask {
 
                 val clientID = parsedClientMessage.id
                 val clientRef = ClientRef(clientID, clientSocket)
-                parsedClientMessage.type.exectue(parsedClientMessage, clientRef)
+                parsedClientMessage.type.execute(parsedClientMessage, clientRef)
             } catch (e: Exception) {
                 println("[Monitoring] Failed to parse message: $clientMessage")
 
@@ -63,7 +63,7 @@ class MonitoringTask : ServerTask {
                     .setPayload(payload)
 
                 val clientIncomingMessage = clientIncomingMessageBuilder.build()
-                clientIncomingMessage.type.exectue(clientIncomingMessage, clientRef)
+                clientIncomingMessage.type.execute(clientIncomingMessage, clientRef)
             }
         }
     }

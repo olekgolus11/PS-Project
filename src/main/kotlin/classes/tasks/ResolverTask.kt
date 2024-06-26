@@ -1,7 +1,6 @@
 package main.classes.tasks
 
 import main.classes.builders.ClientIncomingMessageBuilder
-import main.data_classes.ClientIncomingMessage
 import main.interfaces.ServerTask
 import main.util.MessageQueues
 import main.util.ServerConfig
@@ -30,7 +29,7 @@ class ResolverTask : ServerTask {
             println("[Resolver] Resolving message: $messageToResend")
 
             clientReceiverRefs.forEach {
-                messageToResend.type.exectue(messageToResend, it)
+                messageToResend.type.execute(messageToResend, it)
             }
 
             println("[Resolver] Resolved message: ${kkwQueueMessage.clientOutgoingMessage.topic}")

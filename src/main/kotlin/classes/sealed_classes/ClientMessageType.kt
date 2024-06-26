@@ -7,7 +7,6 @@ import main.adapters.JsonClientOutgoingMessageAdapter
 import main.classes.builders.ClientOutgoingMessageBuilder
 import main.classes.sealed_classes.ClientIncomingMessageMode
 import main.data_classes.ClientIncomingMessage
-import main.data_classes.ClientOutgoingMessage
 import main.data_classes.KKWQueueMessage
 import main.util.MessageQueues
 import main.util.ServerConfig
@@ -15,12 +14,12 @@ import java.io.PrintWriter
 import java.sql.Timestamp
 
 sealed class ClientMessageType {
-    abstract fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef)
+    abstract fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef)
     abstract fun checkJson(json: String): Boolean
 
     @Json(name = "register")
     data object Register : ClientMessageType() {
-        override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+        override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Register Callback] Register - from ${clientIncomingMessage.id}")
 
             if (clientIncomingMessage.mode == ClientIncomingMessageMode.Producer) {
@@ -58,7 +57,7 @@ sealed class ClientMessageType {
 
     @Json(name = "withdraw")
     data object Withdraw : ClientMessageType() {
-        override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+        override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Withdraw Callback] Withdraw - from ${clientIncomingMessage.id}")
 
             //checkJson()
@@ -91,7 +90,7 @@ sealed class ClientMessageType {
 
     @Json(name = "reject")
     data object Reject : ClientMessageType() {
-        override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+        override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Reject Callback] Reject - from ${clientIncomingMessage.id}")
         }
 
@@ -104,7 +103,7 @@ sealed class ClientMessageType {
     data object Acknowledge : ClientMessageType() {
         private val jsonClientOutgoingMessageAdapter = JsonClientOutgoingMessageAdapter()
 
-        override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+        override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Acknowledge Callback] Acknowledge - from ${clientIncomingMessage.id}")
 
             //checkJson
@@ -126,7 +125,7 @@ sealed class ClientMessageType {
 
     @Json(name = "message")
     data object Message : ClientMessageType() {
-        override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+        override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Message Callback] Message - from ${clientIncomingMessage.id}")
 
             //checkJson()
@@ -170,7 +169,7 @@ sealed class ClientMessageType {
 
     @Json(name = "status")
     data object Status : ClientMessageType() {
-        override fun exectue(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
+        override fun execute(clientIncomingMessage: ClientIncomingMessage, clientRef: ClientRef) {
             println("[Status Callback] Status - from ${clientIncomingMessage.id}")
         }
 
