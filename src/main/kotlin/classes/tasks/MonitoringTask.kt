@@ -7,6 +7,8 @@ import data_classes.ClientRef
 import main.adapters.JsonClientIncomingMessageAdapter
 import main.classes.builders.ClientIncomingMessageBuilder
 import classes.sealed_classes.ClientMessageType
+import main.classes.builders.ClientOutgoingMessageBuilder
+import main.data_classes.KKWQueueMessage
 import main.interfaces.ServerTask
 import main.util.MessageQueues
 import main.util.ServerConfig
@@ -47,7 +49,7 @@ class MonitoringTask : ServerTask {
                 println("[Monitoring] Failed to parse message: $clientMessage, error: ${e.message}")
 
                 val messageMap = jsonClientIncomingMessageErrorAdapter.fromJson(clientMessage)
-                val timestamp = messageMap?.get("timestamp") as? Timestamp
+                val timestamp = messageMap?.get("timestamp") as? String
                 val topic = messageMap?.get("topic") as? String
                 val clientID = messageMap?.get("id") as? String ?: "Unknown"
                 val clientRef = ClientRef(clientID, clientSocket)
@@ -59,15 +61,16 @@ class MonitoringTask : ServerTask {
                     "message" to e.message!!
                 )
 
-                val clientIncomingMessageBuilder = ClientIncomingMessageBuilder()
+                val clientOutgoingMessage = ClientOutgoingMessageBuilder()
                     .setType(ClientMessageType.Reject)
                     .setId(ServerConfig.serverId)
                     .setTopic("logs")
                     .setTimestamp(Timestamp(System.currentTimeMillis()))
                     .setPayload(payload)
 
-                val clientIncomingMessage = clientIncomingMessageBuilder.build()
-                clientIncomingMessage.type.execute(clientIncomingMessage, clientRef)
+                val clientIncomingMessage = clientOutgoingMessage.build()
+
+                MessageQueues.KKW.add(KKWQueueMessage(clientIncomingMessage, listOf(clientRef)))
             }
         }
     }
