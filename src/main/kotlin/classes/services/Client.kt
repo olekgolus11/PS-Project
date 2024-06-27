@@ -68,22 +68,26 @@ class Client {
                 val command = parts[0]
                 val parameters = parts.drop(1)
 
-                when (command) {
-                    "isConnected" -> println(isConnected())
-                    "produce" -> produce(parameters[0], parameters.drop(1).joinToString(" "))
-                    "createProducer" -> createProducer(parameters[0])
-                    "withdrawProducer" -> withdrawProducer(parameters[0])
-                    "createSubscriber" -> createSubscriber(parameters[0])
-                    "withdrawSubscriber" -> withdrawSubscriber(parameters[0])
-                    "getStatus" -> getStatus()
-                    "getServerStatus" -> getServerStatus(::printStatusCallback)
-                    "getServerLogs" -> getServerLogs(::printLogsCallback)
-                    "stop" -> {
-                        stop()
-                        break
-                    }
+                try {
+                    when (command) {
+                        "isConnected" -> println(isConnected())
+                        "produce" -> produce(parameters[0], parameters.drop(1).joinToString(" "))
+                        "createProducer" -> createProducer(parameters[0])
+                        "withdrawProducer" -> withdrawProducer(parameters[0])
+                        "createSubscriber" -> createSubscriber(parameters[0])
+                        "withdrawSubscriber" -> withdrawSubscriber(parameters[0])
+                        "getStatus" -> getStatus()
+                        "getServerStatus" -> getServerStatus(::printStatusCallback)
+                        "getServerLogs" -> getServerLogs(::printLogsCallback)
+                        "stop" -> {
+                            stop()
+                            break
+                        }
 
-                    else -> println("Unknown command: $command")
+                        else -> println("Unknown command: $command")
+                    }
+                } catch (e: Exception) {
+                    println("You must have entered the wrong parameters, please try again")
                 }
             }
             println("Stopped sending messages to server")

@@ -35,8 +35,7 @@ class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
                 }
                 val kkoQueueMessage = KKOQueueMessage(message, clientSocket)
                 MessageQueues.KKO.add(kkoQueueMessage)
-            } catch (e: SocketTimeoutException) {
-                println("[Client Handler] Socket timeout")
+            } catch (_: SocketTimeoutException) {
             } catch (e: SocketException) {
                 println("[Client Handler] Socket closed")
                 stop()

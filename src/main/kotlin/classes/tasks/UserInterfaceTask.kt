@@ -30,7 +30,10 @@ class UserInterfaceTask(private val server: Server) : ServerTask {
                 }
                 "getTopicsInfo" -> {
                     val topicsInfo = MessageQueues.LT
-                    println("[User Interface] Topics information: $topicsInfo")
+                    println("[User Interface] Topics information:")
+                    topicsInfo.forEach { (_, topicInfo) ->
+                        println("Topic: $topicInfo")
+                    }
                 }
                 else -> println("[User Interface] Unknown command: $command")
             }

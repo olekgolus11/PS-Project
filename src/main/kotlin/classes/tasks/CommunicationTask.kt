@@ -20,20 +20,16 @@ class CommunicationTask(private val listeningAddress: InetAddress) : ServerTask 
 
             while (isRunning) {
                 try {
-                    println("[Communication] Waiting for client connection")
                     val clientSocket = serverSocket.accept()
                     val clientHandlerTask = ClientHandlerTask(clientSocket)
                     val clientHandlerThread = Thread(clientHandlerTask)
                     clientHandlerThread.start()
                     clientHandlerTasks.add(clientHandlerTask)
                     clientHandlerThreads.add(clientHandlerThread)
-                } catch (e: SocketTimeoutException) {
-                    if (isRunning) {
-                        println("[Communication] Socket timeout")
-                    }
+                } catch (_: SocketTimeoutException) {
                 } catch (e: SocketException) {
                     if (isRunning) {
-                        e.printStackTrace()
+                        println("[Communication] Socket exception: ${e.message}")
                     }
                 }
             }
