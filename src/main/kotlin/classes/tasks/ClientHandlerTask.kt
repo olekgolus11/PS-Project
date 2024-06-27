@@ -3,11 +3,8 @@ package main.classes.tasks
 import classes.sealed_classes.ClientMessageType
 import main.adapters.JsonClientIncomingMessageAdapter
 import main.classes.builders.ClientIncomingMessageBuilder
-import main.classes.builders.ClientOutgoingMessageBuilder
 import main.classes.sealed_classes.ClientIncomingMessageMode
-import main.data_classes.ClientIncomingMessage
 import main.data_classes.KKOQueueMessage
-import main.data_classes.KKWQueueMessage
 import main.interfaces.ServerTask
 import main.util.MessageQueues
 import java.net.Socket
@@ -16,11 +13,10 @@ import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import java.io.PrintWriter
 import java.sql.Timestamp
 
 class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
-    private var stopClient = false
+    private var isRunning = true
     private var jsonClientIncomingMessageAdapter = JsonClientIncomingMessageAdapter()
 
     override fun run() {
@@ -29,7 +25,7 @@ class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
         clientSocket.soTimeout = ServerConfig.timeOut * 1000
         val reader = BufferedReader(InputStreamReader(clientSocket.getInputStream()))
 
-        while (!stopClient) {
+        while (isRunning) {
             try {
                 val message = reader.readLine()
                 if (message == null) {
@@ -49,12 +45,14 @@ class ClientHandlerTask(private val clientSocket: Socket) : ServerTask {
     }
 
     override fun stop() {
-        stopClient = true
-        clientSocket.shutdownInput()
-        clientSocket.close()
-        removeClientFromSubscribers()
-        removeTopicIfClientIsProducer()
-        println("[Client Handler] Client Handler task stopped")
+        if (isRunning) {
+            isRunning = false
+            clientSocket.shutdownInput()
+            clientSocket.close()
+            removeClientFromSubscribers()
+            removeTopicIfClientIsProducer()
+            println("[Client Handler] Client Handler task stopped")
+        }
     }
 
     private fun removeClientFromSubscribers() {

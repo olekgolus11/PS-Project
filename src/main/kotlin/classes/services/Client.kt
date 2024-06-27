@@ -52,6 +52,10 @@ class Client {
                         println("You have been withdrawn from the only topic you have subscribed to, stopping client")
                         stop()
                     }
+                } else {
+                    println("Stopping client")
+                    stop()
+                    break
                 }
             }
             println("Stopped receiving messages from server")
@@ -237,12 +241,14 @@ class Client {
     }
 
     private fun stop() {
-        isClientRunning = false
-        socket.shutdownInput()
-        socket.shutdownOutput()
-        reader.close()
-        writer.close()
-        socket.close()
-        System.`in`.close()
+        if (isClientRunning) {
+            isClientRunning = false
+            socket.shutdownInput()
+            socket.shutdownOutput()
+            reader.close()
+            writer.close()
+            socket.close()
+            System.`in`.close()
+        }
     }
 }

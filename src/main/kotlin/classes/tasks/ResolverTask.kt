@@ -7,12 +7,12 @@ import main.util.ServerConfig
 import main.util.ServerLogs
 
 class ResolverTask : ServerTask {
-    private var stopResolving = false
+    private var isRunning = true
 
     override fun run() {
         println("[Resolver] Resolver task is running")
 
-        while (!stopResolving) {
+        while (isRunning) {
             if (MessageQueues.KKW.isEmpty()) {
                 Thread.sleep(100)
                 continue
@@ -46,7 +46,7 @@ class ResolverTask : ServerTask {
     }
 
     override fun stop() {
-        stopResolving = true
+        isRunning = false
         println("[Resolver] Resolver task is stopping")
     }
 }

@@ -5,11 +5,15 @@ import main.classes.tasks.MonitoringTask
 import main.classes.tasks.ResolverTask
 import main.classes.tasks.UserInterfaceTask
 import main.data_classes.Config
+import main.interfaces.ServerTask
+import main.util.MessageQueues
 import main.util.ServerConfig
+import java.net.InetAddress
 
 class Server(configFileName: String) {
     private val jsonConfigAdapter = JsonConfigAdapter()
     private val serverTaskThreads: MutableList<Thread> = mutableListOf()
+    private val serverTasks: MutableList<ServerTask> = mutableListOf()
 
     init {
         loadConfigFromFile(configFileName)
@@ -22,18 +26,26 @@ class Server(configFileName: String) {
     }
 
     private fun setupServerTaskThreads() {
-        val monitoringThread = Thread(MonitoringTask())
+        val monitoringTask = MonitoringTask()
+        val monitoringThread = Thread(monitoringTask)
         serverTaskThreads.add(monitoringThread)
+        serverTasks.add(monitoringTask)
 
-        val userInterfaceThread = Thread(UserInterfaceTask())
+        val userInterfaceTask = UserInterfaceTask(this)
+        val userInterfaceThread = Thread(userInterfaceTask)
         serverTaskThreads.add(userInterfaceThread)
+        serverTasks.add(userInterfaceTask)
 
-        val resolverThread = Thread(ResolverTask())
+        val resolverTask = ResolverTask()
+        val resolverThread = Thread(resolverTask)
         serverTaskThreads.add(resolverThread)
+        serverTasks.add(resolverTask)
 
         ServerConfig.listenAddresses.forEach { listeningAddress ->
-            val communicationThread = Thread(CommunicationTask(listeningAddress))
+            val communicationTask = CommunicationTask(listeningAddress)
+            val communicationThread = Thread(communicationTask)
             serverTaskThreads.add(communicationThread)
+            serverTasks.add(communicationTask)
         }
     }
 
@@ -41,4 +53,7 @@ class Server(configFileName: String) {
         serverTaskThreads.forEach { it.start() }
     }
 
+    fun stop() {
+        serverTasks.forEach { it.stop() }
+    }
 }

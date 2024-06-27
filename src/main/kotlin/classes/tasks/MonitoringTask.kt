@@ -13,7 +13,7 @@ import main.util.ServerConfig
 import java.sql.Timestamp
 
 class MonitoringTask : ServerTask {
-    private var stopMonitoring = false
+    private var isRunning = true
     private val jsonClientIncomingMessageAdapter = JsonClientIncomingMessageAdapter()
     private val jsonClientIncomingMessageErrorAdapter: JsonAdapter<Map<String, Any>> = Moshi.Builder().build().adapter(
         Types.newParameterizedType(Map::class.java, String::class.java, Any::class.java))
@@ -21,7 +21,7 @@ class MonitoringTask : ServerTask {
     override fun run() {
         println("[Monitoring] Monitoring task is running")
 
-        while (!stopMonitoring) {
+        while (isRunning) {
             if (MessageQueues.KKO.isEmpty()) {
                 Thread.sleep(1)
                 continue
@@ -73,6 +73,7 @@ class MonitoringTask : ServerTask {
     }
 
     override fun stop() {
-        println("Monitoring task is stopping")
+        isRunning = false
+        println("[Monitoring] Monitoring task is stopping")
     }
 }

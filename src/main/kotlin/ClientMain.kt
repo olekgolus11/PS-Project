@@ -16,5 +16,9 @@ fun main() {
     }
 
     val client = Client()
-    client.start(ipAddress, port, clientId)
+    try {
+        client.start(ipAddress, port, clientId)
+    } catch (e: Exception) {
+        println("Failed to start client: ${e.message}")
+    }
 }

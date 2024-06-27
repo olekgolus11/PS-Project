@@ -8,7 +8,8 @@ import java.net.SocketException
 import java.net.SocketTimeoutException
 
 class CommunicationTask(private val listeningAddress: InetAddress) : ServerTask {
-    private var stopServer = false
+    private var isRunning = true
+    private var clientHandlerTasks: MutableList<ClientHandlerTask> = mutableListOf()
     private var clientHandlerThreads: MutableList<Thread> = mutableListOf()
 
     override fun run() {
@@ -17,19 +18,21 @@ class CommunicationTask(private val listeningAddress: InetAddress) : ServerTask 
         ServerSocket(ServerConfig.listenPort, 0, listeningAddress).use { serverSocket ->
             serverSocket.soTimeout = ServerConfig.timeOut * 1000
 
-            while (!stopServer) {
+            while (isRunning) {
                 try {
                     println("[Communication] Waiting for client connection")
                     val clientSocket = serverSocket.accept()
-                    val clientHandlerThread = Thread(ClientHandlerTask(clientSocket))
+                    val clientHandlerTask = ClientHandlerTask(clientSocket)
+                    val clientHandlerThread = Thread(clientHandlerTask)
                     clientHandlerThread.start()
+                    clientHandlerTasks.add(clientHandlerTask)
                     clientHandlerThreads.add(clientHandlerThread)
                 } catch (e: SocketTimeoutException) {
-                    if (!stopServer) {
+                    if (isRunning) {
                         println("[Communication] Socket timeout")
                     }
                 } catch (e: SocketException) {
-                    if (!stopServer) {
+                    if (isRunning) {
                         e.printStackTrace()
                     }
                 }
@@ -38,7 +41,10 @@ class CommunicationTask(private val listeningAddress: InetAddress) : ServerTask 
     }
 
     override fun stop() {
-        stopServer = true
+        println("[Communication] Communication task is stopping")
+        isRunning = false
+        clientHandlerTasks.forEach { it.stop() }
         clientHandlerThreads.forEach { it.join() }
+        println("[Communication] Communication task stopped")
     }
 }
