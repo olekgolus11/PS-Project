@@ -70,11 +70,11 @@ class Client {
 
                 when (command) {
                     "isConnected" -> println(isConnected())
-                    "p" -> produce(parameters[0], parameters.drop(1).joinToString(" "))
-                    "cp" -> createProducer(parameters[0])
-                    "wp" -> withdrawProducer(parameters[0])
-                    "cs" -> createSubscriber(parameters[0])
-                    "ws" -> withdrawSubscriber(parameters[0])
+                    "produce" -> produce(parameters[0], parameters.drop(1).joinToString(" "))
+                    "createProducer" -> createProducer(parameters[0])
+                    "withdrawProducer" -> withdrawProducer(parameters[0])
+                    "createSubscriber" -> createSubscriber(parameters[0])
+                    "withdrawSubscriber" -> withdrawSubscriber(parameters[0])
                     "getStatus" -> getStatus()
                     "getServerStatus" -> getServerStatus(::printStatusCallback)
                     "getServerLogs" -> getServerLogs(::printLogsCallback)
