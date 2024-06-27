@@ -174,6 +174,8 @@ sealed class ClientMessageType {
                                 .setTimestamp(Timestamp(System.currentTimeMillis()))
                                 .setPayload(
                                     mapOf(
+                                        "timestampOfMessage" to clientIncomingMessage.timestamp,
+                                        "topicOfMessage" to clientIncomingMessage.topic,
                                         "message" to "Producer has withdrawn from the topic"
                                     )
                                 ).build()
@@ -362,6 +364,9 @@ sealed class ClientMessageType {
             if (clientIncomingMessage.mode == ClientIncomingMessageMode.Subscriber) {
                 throw IllegalArgumentException("Mode cannot be Subscriber")
             }
+            if (MessageQueues.LT[clientIncomingMessage.topic] == null) {
+                throw IllegalArgumentException("Topic does not exist")
+            }
             if (MessageQueues.LT[clientIncomingMessage.topic]?.producerRef != clientRef) {
                 throw IllegalArgumentException("Producer is not the same as the client")
             }
@@ -440,6 +445,7 @@ sealed class ClientMessageType {
                 .setTimestamp(Timestamp(System.currentTimeMillis()))
                 .setPayload(
                     mapOf(
+                        "timestampOfMessage" to clientIncomingMessage.timestamp,
                         "success" to true,
                         "message" to "Status of client",
                         "topicsProducedByClient" to topicsProducedByClient,
@@ -465,6 +471,7 @@ sealed class ClientMessageType {
                 .setTimestamp(Timestamp(System.currentTimeMillis()))
                 .setPayload(
                     mapOf(
+                        "timestampOfMessage" to clientIncomingMessage.timestamp,
                         "success" to true,
                         "message" to "Status of server",
                         "topics" to topics
@@ -488,6 +495,7 @@ sealed class ClientMessageType {
                 .setTimestamp(Timestamp(System.currentTimeMillis()))
                 .setPayload(
                     mapOf(
+                        "timestampOfMessage" to clientIncomingMessage.timestamp,
                         "success" to true,
                         "message" to "Logs of server",
                         "logs" to payloads
